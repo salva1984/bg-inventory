@@ -171,6 +171,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   margin-bottom: 8px;
 }
 
+/* La barra permanece montada para animar también su desaparición. */
+.loading-slot mat-progress-bar {
+  opacity: 0;
+  transition: opacity 400ms ease 400ms;
+}
+.loading-slot mat-progress-bar.is-loading {
+  opacity: 1;
+  transition-delay: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-slot mat-progress-bar { transition: none; }
+}
+
 /* ---------- Tablas ---------- */
 .table-wrap {
   width: 100%;

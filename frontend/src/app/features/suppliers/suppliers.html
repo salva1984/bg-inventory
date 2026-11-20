@@ -19,7 +19,8 @@
 
   <!-- Espacio fijo para la barra: al aparecer no desplaza la tabla. -->
   <div class="loading-slot">
-    @if (loading()) { <mat-progress-bar mode="indeterminate" aria-label="Cargando"></mat-progress-bar> }
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando"
+        [class.is-loading]="loading()" [attr.aria-hidden]="!loading()"></mat-progress-bar>
   </div>
 
   @if (suppliers(); as suppliers) {
