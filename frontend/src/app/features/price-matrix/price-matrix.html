@@ -36,18 +36,24 @@
       <p class="empty">No hay resultados. Prueba otra búsqueda.</p>
     } @else {
       <div class="table-wrap">
-        <table>
+        <!-- Solo la columna Producto se ordena (por nombre); el servidor ordena y pagina. -->
+        <table
+            matSort
+            matSortDisableClear
+            matSortActive="name"
+            [matSortDirection]="descending() ? 'desc' : 'asc'"
+            (matSortChange)="changeSort($event)">
           <!-- Producto y proveedores con ancho fijo: la tabla se desplaza si hay muchos proveedores. -->
           <colgroup>
             <col class="col-product">
             @for (supplier of matrix.suppliers; track supplier.id) { <col class="col-supplier"> }
-            <col class="col-actions">
+            <col class="col-actions-compact">
           </colgroup>
           <thead>
             <tr>
-              <th>Producto</th>
+              <th mat-sort-header="name">Producto</th>
               @for (supplier of matrix.suppliers; track supplier.id) { <th class="num">{{ supplier.name }}</th> }
-              <th><span class="sr-only">Acciones</span></th>
+              <th class="actions">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +73,10 @@
                   </td>
                 }
                 <td class="actions">
-                  <button mat-button (click)="openForm(item.productId)">{{ isAdmin ? 'Editar' : 'Ver detalle' }}</button>
+                  <button mat-button (click)="openForm(item.productId)">
+                    <mat-icon>{{ isAdmin ? 'edit' : 'visibility' }}</mat-icon>
+                    {{ isAdmin ? 'Editar' : 'Ver' }}
+                  </button>
                 </td>
               </tr>
             }

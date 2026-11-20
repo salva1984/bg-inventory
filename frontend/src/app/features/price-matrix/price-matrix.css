@@ -33,3 +33,34 @@ tbody tr {
 th.num {
   white-space: normal;
 }
+
+/*
+ * Con muchos proveedores la tabla se desplaza; la columna de acciones se queda pegada al borde
+ * derecho para que el botón siempre sea alcanzable. Necesita fondo propio (opaco) para tapar las
+ * celdas que pasan por debajo, que replica el rayado y el hover de las filas.
+ */
+/* Columna estrecha: solo cabe un botón con icono y una palabra. */
+.col-actions-compact {
+  width: 120px;
+}
+
+th.actions,
+td.actions {
+  position: sticky;
+  right: 0;
+  padding: 12px 8px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+}
+
+td.actions {
+  background: var(--background);
+}
+
+tbody tr:nth-child(even) td.actions {
+  background: #f7f9f9;
+}
+
+tbody tr:hover td.actions {
+  background: var(--muted);
+}

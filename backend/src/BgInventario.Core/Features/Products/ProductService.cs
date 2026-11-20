@@ -39,8 +39,11 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
 
     public async Task<PriceMatrix> GetPriceMatrixAsync(ProductQuery query, CancellationToken ct)
     {
-        var productPageResult = await ApplyProductQuery(query)
-            .OrderBy(p => p.Name)
+        // Same ordering as the product list; the matrix UI only offers name, ascending or descending.
+        var products = ApplyProductQuery(query);
+        var sorted = SortProducts(products, query.SortBy ?? ProductSortBy.Name, query.Descending ?? false);
+
+        var productPageResult = await sorted
             .Select(p => new { p.Id, p.Code, p.Name })
             .ToPagedResultAsync(query, ct);
 

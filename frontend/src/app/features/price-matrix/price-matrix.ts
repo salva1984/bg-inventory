@@ -4,9 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { Subscription } from 'rxjs';
 import { dialogSize } from '../../core/constants/ui';
 import { PriceMatrixResponse, PriceMatrixRow } from '../../interfaces/price-matrix';
@@ -26,9 +28,11 @@ import { ProductForm, ProductFormData } from '../products/product-form/product-f
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressBarModule,
     MatSelectModule,
+    MatSortModule,
     Pagination,
   ],
   templateUrl: './price-matrix.html',
@@ -44,6 +48,7 @@ export class PriceMatrix implements OnInit, OnDestroy {
   // Filtros y página actual.
   search = signal('');
   supplierFilter = signal('');
+  descending = signal(false);
   page = signal(1);
 
   matrix = signal<PriceMatrixResponse | null>(null);
@@ -73,6 +78,7 @@ export class PriceMatrix implements OnInit, OnDestroy {
       page: this.page(),
       search: this.search().trim(),
       supplierId: this.supplierFilter(),
+      descending: this.descending(),
     };
     
     this.request = this.productService.getPriceMatrix(filters).subscribe({
@@ -101,6 +107,12 @@ export class PriceMatrix implements OnInit, OnDestroy {
   applyFilters() {
     this.page.set(1);
     this.load();
+  }
+
+  // Clic en la cabecera "Producto": `matSortDisableClear` garantiza que siempre hay dirección.
+  changeSort(sort: Sort) {
+    this.descending.set(sort.direction === 'desc');
+    this.applyFilters();
   }
 
   goToPage(page: number) {

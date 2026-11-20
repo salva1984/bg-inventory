@@ -46,7 +46,8 @@ export class ProductService {
   getPriceMatrix(filters: PriceMatrixFilters) {
     let params = new HttpParams()
       .set('page', filters.page)
-      .set('pageSize', pageSize);
+      .set('pageSize', pageSize)
+      .set('descending', filters.descending);
 
     if (filters.search) params = params.set('search', filters.search);
     if (filters.supplierId) params = params.set('supplierId', filters.supplierId);

@@ -25,4 +25,6 @@ export interface PriceMatrixFilters {
   page: number;
   search: string;
   supplierId: string;
+  // La matriz solo se ordena por nombre de producto.
+  descending: boolean;
 }
