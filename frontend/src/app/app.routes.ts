@@ -15,6 +15,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'dashboard',
+        title: 'Resumen',
+        loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard),
+      },
+      {
         path: 'products',
         title: 'Productos',
         loadComponent: () => import('./features/products/products').then(m => m.Products),
@@ -29,7 +34,8 @@ export const routes: Routes = [
         title: 'Proveedores',
         loadComponent: () => import('./features/suppliers/suppliers').then(m => m.Suppliers),
       },
-      { path: '', redirectTo: 'products', pathMatch: 'full' },
+      // El resumen es la página de inicio después de iniciar sesión.
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: '' },

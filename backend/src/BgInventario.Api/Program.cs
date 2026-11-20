@@ -58,6 +58,7 @@ try
     app.MapAuthEndpoints();
     app.MapProductEndpoints();
     app.MapSupplierEndpoints();
+    app.MapDashboardEndpoints();
     app.MapClientLogEndpoints();
 
     if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))

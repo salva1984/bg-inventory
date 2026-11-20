@@ -1,0 +1,128 @@
+/* ---------- Cifras principales ---------- */
+/* Una fila de tarjetas que pasa a dos o una columna según el ancho disponible. */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.kpi-label {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-detail {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+/* ---------- Paneles ---------- */
+/* Dos columnas: el gráfico ocupa toda la fila de arriba y las dos tablas van lado a lado. */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.panel {
+  min-width: 0;
+  padding: 18px 20px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.panel-wide {
+  grid-column: 1 / -1;
+}
+.panel h2 {
+  font-size: 17px;
+}
+.panel-hint {
+  margin: 4px 0 14px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.panel-empty {
+  padding: 24px 0;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+/* Las tablas del panel son cortas: no necesitan el ancho mínimo de las listas. */
+.panel table {
+  min-width: 0;
+}
+.panel th,
+.panel td {
+  padding: 10px 12px;
+}
+.col-spread {
+  width: 110px;
+}
+
+/* ---------- Barras por proveedor ---------- */
+/* Cada fila: nombre, barra y cifra; las barras comparten la misma línea de inicio. */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 12px;
+}
+.bar-track {
+  height: 18px;
+}
+/* Barra delgada de un solo color; esquinas redondeadas solo en el extremo del dato. */
+.bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--primary);
+  border-radius: 0 4px 4px 0;
+}
+.bar-row:hover .bar {
+  background: var(--primary-hover);
+}
+.bar-value {
+  font-weight: 500;
+}
+
+/* ---------- Pantallas pequeñas ---------- */
+@media (max-width: 900px) {
+  .panels {
+    grid-template-columns: 1fr;
+  }
+}
+/* El nombre pasa arriba de la barra para que esta conserve un ancho útil. */
+@media (max-width: 560px) {
+  .bar-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 4px;
+  }
+  .bar-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

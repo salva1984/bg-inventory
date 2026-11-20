@@ -1,0 +1,122 @@
+<header class="page-heading">
+  <h1>Resumen</h1>
+</header>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+<div class="loading-slot">
+  <mat-progress-bar mode="indeterminate" aria-label="Cargando"
+      [class.is-loading]="loading()" [attr.aria-hidden]="!loading()"></mat-progress-bar>
+</div>
+
+@if (summary(); as summary) {
+  <!-- Cifras principales: el valor del inventario va primero porque es la que resume el negocio. -->
+  <section class="kpis" aria-label="Cifras del inventario">
+    <div class="kpi">
+      <span class="kpi-label">Valor del inventario</span>
+      <strong class="kpi-value">{{ summary.totals.inventoryValue | currency:'USD' }}</strong>
+      <span class="kpi-detail">Precio × existencias de cada lote</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Unidades en stock</span>
+      <strong class="kpi-value">{{ summary.totals.totalUnits | number }}</strong>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Productos</span>
+      <strong class="kpi-value">{{ summary.totals.productCount | number }}</strong>
+      @if (summary.totals.outOfStockProductCount > 0) {
+        <span class="badge badge-warn">{{ summary.totals.outOfStockProductCount }} sin stock</span>
+      }
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Proveedores</span>
+      <strong class="kpi-value">{{ summary.totals.supplierCount | number }}</strong>
+    </div>
+  </section>
+
+  <div class="panels">
+    <!-- Barras horizontales ordenadas de mayor a menor; la cifra va al final de cada barra. -->
+    <section class="panel panel-wide" aria-labelledby="by-supplier-title">
+      <h2 id="by-supplier-title">Valor del inventario por proveedor</h2>
+      <p class="panel-hint">Los proveedores con más dinero en existencias.</p>
+      @if (summary.valueBySupplier.length === 0) {
+        <p class="panel-empty">Todavía no hay inventario registrado.</p>
+      } @else {
+        <ul class="bars">
+          @for (supplier of summary.valueBySupplier; track supplier.supplierId) {
+            <li
+                class="bar-row"
+                [title]="supplier.supplierName + ': ' + (supplier.inventoryValue | currency:'USD') + ' en ' + (supplier.units | number) + ' unidades'">
+              <span class="bar-name truncate">{{ supplier.supplierName }}</span>
+              <span class="bar-track" aria-hidden="true">
+                <span class="bar" [style.width.%]="barWidth(supplier.inventoryValue)"></span>
+              </span>
+              <span class="bar-value num">{{ supplier.inventoryValue | currency:'USD':'symbol':'1.0-0' }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="panel" aria-labelledby="lowest-stock-title">
+      <h2 id="lowest-stock-title">Menor stock</h2>
+      <p class="panel-hint">Productos con menos unidades entre todos sus lotes.</p>
+      @if (summary.lowestStock.length === 0) {
+        <p class="panel-empty">No hay productos registrados.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="num col-count">Existencias</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of summary.lowestStock; track product.id) {
+              <tr>
+                <td><strong class="truncate" [title]="product.name">{{ product.name }}</strong><span class="detail code">{{ product.code }}</span></td>
+                <td class="num">
+                  @if (product.totalStock === 0) {
+                    <span class="badge badge-warn">Sin stock</span>
+                  } @else {
+                    {{ product.totalStock | number }}
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
+    <section class="panel" aria-labelledby="price-spread-title">
+      <h2 id="price-spread-title">Mayor diferencia de precio</h2>
+      <p class="panel-hint">Mismo producto, más caro según el proveedor o el lote.</p>
+      @if (summary.largestPriceSpread.length === 0) {
+        <p class="panel-empty">Ningún producto tiene precios distintos entre sus lotes.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="num col-money">Precio</th>
+              <th class="num col-spread">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (product of summary.largestPriceSpread; track product.id) {
+              <tr>
+                <td><strong class="truncate" [title]="product.name">{{ product.name }}</strong><span class="detail code">{{ product.code }}</span></td>
+                <td class="num">
+                  {{ product.minPrice | currency:'USD' }}
+                  <span class="detail">hasta {{ product.maxPrice | currency:'USD' }}</span>
+                </td>
+                <td class="num">+{{ product.spreadPercent | number:'1.0-1' }} %</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  </div>
+}
