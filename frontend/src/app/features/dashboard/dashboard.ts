@@ -1,9 +1,15 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { dialogSize } from '../../core/constants/ui';
 import { DashboardSummary } from '../../interfaces/dashboard';
+import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { errorMessage } from '../../shared/utils/error-message';
+import { ProductForm, ProductFormData } from '../products/product-form/product-form';
 
 /**
  * Página de inicio: cifras del inventario, valor por proveedor, productos con menos existencias
@@ -11,12 +17,15 @@ import { errorMessage } from '../../shared/utils/error-message';
  */
 @Component({
   selector: 'app-dashboard',
-  imports: [CurrencyPipe, DecimalPipe, MatProgressBarModule],
+  imports: [CurrencyPipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class Dashboard implements OnInit {
   private dashboardService = inject(DashboardService);
+  private dialog = inject(MatDialog);
+
+  isAdmin = inject(AuthService).isAdmin;
 
   summary = signal<DashboardSummary | null>(null);
   loading = signal(false);
@@ -29,7 +38,12 @@ export class Dashboard implements OnInit {
   });
 
   ngOnInit() {
+    this.load();
+  }
+
+  private load() {
     this.loading.set(true);
+    this.error.set('');
     this.dashboardService.summary().subscribe({
       next: summary => {
         this.summary.set(summary);
@@ -47,5 +61,18 @@ export class Dashboard implements OnInit {
     const highest = this.highestSupplierValue();
     if (highest === 0) return 0;
     return (inventoryValue / highest) * 100;
+  }
+
+  // Abre el formulario del producto, que incluye sus lotes; si se guardó algo, se recalcula el resumen.
+  openForm(productId: number) {
+    const dialogRef = this.dialog.open<ProductForm, ProductFormData, boolean>(ProductForm, {
+      ...dialogSize,
+      ariaLabelledBy: 'dialog-title',
+      data: { id: productId },
+    });
+
+    dialogRef.afterClosed().subscribe(saved => {
+      if (saved) this.load();
+    });
   }
 }
