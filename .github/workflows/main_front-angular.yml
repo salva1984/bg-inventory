@@ -5,7 +5,7 @@
 # Requiere en GitHub (Settings → Secrets and variables → Actions):
 #   - Los secretos AZUREAPPSERVICE_* que creó Azure al conectar el Deployment Center (inicio de sesión OIDC).
 # Opcional:
-#   - Variable API_URL: reemplaza la URL de la API por defecto (la Container App bg-backend).
+#   - Variable API_URL: reemplaza la URL de la API por defecto (la Container App container-bg-2).
 
 name: Build and deploy Angular app to Azure Web App - front-angular
 
@@ -46,7 +46,7 @@ jobs:
       - name: Inyectar la URL de la API
         working-directory: frontend
         env:
-          API_URL: ${{ vars.API_URL || 'https://bg-backend.wonderfulflower-12bfbb1b.westus3.azurecontainerapps.io/api' }}
+          API_URL: ${{ vars.API_URL || 'https://container-bg-2.jollycoast-a36c9d38.westus3.azurecontainerapps.io/api' }}
         run: sed -i "s|__API_URL__|$API_URL|" src/environments/environment.ts
 
       - name: Compilar

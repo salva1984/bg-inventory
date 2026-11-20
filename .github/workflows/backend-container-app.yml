@@ -1,13 +1,16 @@
-# Publica la API en Azure Container Apps (app "bg-backend", grupo "bg-inv") con cada push a main que
-# la modifique: corre los tests, construye la imagen, la sube a ACR y actualiza la app.
+# Publica la API en Azure Container Apps (app "container-bg-2", grupo "bg-inv") con cada push a main
+# que la modifique: corre los tests, construye la imagen, la sube a ACR y actualiza la app.
 #
-# Se escribe a mano porque el entorno de la app es "express", que no admite el asistente de
-# despliegue continuo del portal. Sí admite imágenes privadas, secretos y actualizar la imagen por CLI.
+# La app vive en un entorno Workload profiles (perfil Consumption). Un entorno "express" no sirve:
+# no logra descargar imágenes de un ACR privado con ningún método de autenticación.
+# La app descarga la imagen con su identidad administrada (AcrPull sobre el registro), configurada
+# una vez en el portal; este workflow no toca esa configuración, solo cambia la imagen.
 #
 # Requiere en GitHub (Settings → Secrets and variables → Actions → Secrets):
 #   - AZUREAPPSERVICE_CLIENTID_*, _TENANTID_*, _SUBSCRIPTIONID_*: la identidad que Azure creó para el
 #     workflow del frontend. Se reutiliza; necesita el rol Contributor sobre el grupo de recursos bg-inv.
-#   - ACR_USERNAME / ACR_PASSWORD: usuario administrador del registro (bgcontainers → Access keys).
+#   - ACR_USERNAME / ACR_PASSWORD: usuario administrador del registro (bgcontainers → Access keys),
+#     usado solo para subir la imagen desde GitHub.
 #   - DB_CONNECTION_STRING: connection string de Azure SQL, con la contraseña.
 #   - JWT_KEY: clave para firmar los tokens (32+ caracteres).
 #   - SEED_ADMIN_PASSWORD / SEED_VIEWER_PASSWORD: contraseñas de los usuarios iniciales.
@@ -28,7 +31,7 @@ on:
 
 env:
   RESOURCE_GROUP: bg-inv
-  CONTAINER_APP: bg-backend
+  CONTAINER_APP: container-bg-2
   REGISTRY: bgcontainers.azurecr.io
   # Cada imagen se etiqueta con el commit que la generó: se sabe qué código corre en Azure.
   IMAGE: bgcontainers.azurecr.io/bg-backend:${{ github.sha }}
@@ -75,18 +78,6 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CA0CAEBCACB74907A23F5F1A393791C2 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_94B46D528D52489195671C0D93B7CDFF }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9FFF0ED62389472CAC3781DC5DEA6B51 }}
-
-      # Credenciales con las que la app descarga la imagen del registro privado.
-      - name: Configurar el registro en la app
-        env:
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-        run: >
-          az containerapp registry set
-          --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP"
-          --server "$REGISTRY"
-          --username "$ACR_USERNAME"
-          --password "$ACR_PASSWORD"
 
       # Los secretos de GitHub pasan a ser secretos de la Container App (no quedan en texto plano en la app).
       # Llegan como variables de entorno del paso, no insertados en el comando: así un "$" o una comilla
