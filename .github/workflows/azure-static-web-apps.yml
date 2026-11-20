@@ -1,0 +1,60 @@
+# Publica el frontend en Azure Static Web Apps con cada push a main que lo modifique.
+# Sin previews por pull request: cada preview tiene su propia URL, que no está en el CORS de la API,
+# así que el login no funcionaría en ellos.
+#
+# Requiere en GitHub (Settings → Secrets and variables → Actions):
+#   - Secreto AZURE_STATIC_WEB_APPS_API_TOKEN: token de "Manage deployment token" en la Static Web App.
+#   - Variable API_URL: URL pública de la API, por ejemplo https://<api>.azurecontainerapps.io/api
+name: Frontend → Azure Static Web Apps
+
+on:
+  push:
+    branches: [main]
+    # Un cambio solo en el backend no vuelve a publicar el frontend.
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/azure-static-web-apps.yml'
+  # Permite publicar a mano desde la pestaña Actions (por ejemplo, después de cambiar API_URL).
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    name: Compilar y publicar
+    steps:
+      - uses: actions/checkout@v4
+
+      # Angular 22 exige Node ^22.22 o ^24.15.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      # environment.ts trae el marcador __API_URL__; sin la variable, el build falla en vez de publicar algo roto.
+      - name: Inyectar la URL de la API
+        working-directory: frontend
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          test -n "$API_URL" || { echo "Falta la variable API_URL en el repositorio"; exit 1; }
+          sed -i "s|__API_URL__|$API_URL|" src/environments/environment.ts
+
+      - name: Compilar
+        working-directory: frontend
+        run: npm run build
+
+      # Se compila arriba (versión de Node controlada) y Azure solo sube el resultado.
+      # El build incluye staticwebapp.config.json (fallback de rutas a index.html).
+      - name: Publicar
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: frontend/dist/inventory/browser
+          api_location: ""
+          skip_app_build: true

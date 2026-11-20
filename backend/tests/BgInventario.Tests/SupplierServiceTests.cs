@@ -13,8 +13,8 @@ public sealed class SupplierServiceTests : IDisposable
 
     public SupplierServiceTests()
     {
-        _service = new SupplierService(_db.Context, TimeProvider.System);
-        _products = new ProductService(_db.Context, TimeProvider.System);
+        _service = new SupplierService(_db.Context, TimeProvider.System, _db.DashboardCache);
+        _products = new ProductService(_db.Context, TimeProvider.System, _db.DashboardCache);
     }
 
     [Fact]

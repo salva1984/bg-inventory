@@ -8,7 +8,7 @@ public sealed class ProductServiceTests : IDisposable
     private readonly TestDb _db = new();
     private readonly ProductService _service;
 
-    public ProductServiceTests() => _service = new ProductService(_db.Context, TimeProvider.System);
+    public ProductServiceTests() => _service = new ProductService(_db.Context, TimeProvider.System, _db.DashboardCache);
 
     [Fact]
     public async Task Create_normalizes_code_and_saves_lots_per_supplier_and_lot()

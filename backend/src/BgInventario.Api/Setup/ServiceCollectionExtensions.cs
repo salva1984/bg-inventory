@@ -16,7 +16,7 @@ using OpenTelemetry.Trace;
 namespace BgInventario.Api.Setup;
 
 /// <summary>
-/// JSON, validation, error format, CORS, JWT, rate limiting, Swagger, health checks and telemetry.
+/// JSON, validation, error format, CORS, JWT, rate limiting, Swagger, cache, health checks and telemetry.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
@@ -51,6 +51,10 @@ public static class ServiceCollectionExtensions
         services.AddJwtAuthentication(configuration);
         services.AddLoginRateLimit();
         services.AddSwagger();
+
+        // In-memory cache behind HybridCache (used by the dashboard). Registering a distributed
+        // cache (AddStackExchangeRedisCache) later makes it shared between instances, no code change.
+        services.AddHybridCache();
 
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
         services.AddTelemetry();

@@ -1,7 +1,10 @@
 using BgInventario.Core.Entities;
+using BgInventario.Core.Features.Dashboard;
 using BgInventario.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BgInventario.Tests;
 
@@ -18,6 +21,17 @@ public sealed class TestDb : IDisposable
     }
 
     public AppDbContext Context { get; }
+
+    /// <summary>Real HybridCache, empty for each test and shared by the services of that test.</summary>
+    public DashboardCache DashboardCache { get; } = CreateDashboardCache();
+
+    private static DashboardCache CreateDashboardCache()
+    {
+        var services = new ServiceCollection();
+        services.AddHybridCache();
+        var cache = services.BuildServiceProvider().GetRequiredService<HybridCache>();
+        return new DashboardCache(cache);
+    }
 
     /// <summary>Fresh context over the same database (no tracked entities), to assert what was persisted.</summary>
     public AppDbContext CreateContext() => new(new DbContextOptionsBuilder<AppDbContext>()

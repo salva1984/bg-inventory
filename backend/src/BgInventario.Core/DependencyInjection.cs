@@ -15,6 +15,8 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<ClientLogService>();
         services.AddScoped<DashboardService>();
+        // Singleton: wraps HybridCache, which is shared by the whole application.
+        services.AddSingleton<DashboardCache>();
         services.AddScoped<ProductService>();
         services.AddScoped<SupplierService>();
         return services;

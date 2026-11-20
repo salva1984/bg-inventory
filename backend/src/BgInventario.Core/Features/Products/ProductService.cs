@@ -1,5 +1,6 @@
 using BgInventario.Core.Common;
 using BgInventario.Core.Entities;
+using BgInventario.Core.Features.Dashboard;
 using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Products;
@@ -7,8 +8,9 @@ namespace BgInventario.Core.Features.Products;
 /// <summary>
 /// Product use cases: listing, price matrix and CRUD. A product is saved together with its
 /// inventory lots (price and stock per supplier/lot) because the form edits them as one unit.
+/// Every successful write invalidates the dashboard summary, which is built from products and lots.
 /// </summary>
-public sealed class ProductService(IAppDbContext db, TimeProvider clock)
+public sealed class ProductService(IAppDbContext db, TimeProvider clock, DashboardCache dashboardCache)
 {
     public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("product.not_found", "El producto no existe.");
     public static readonly ErrorDetail DuplicateCode = ErrorDetail.Conflict("product.duplicate_code", "Ya existe un producto con ese código.");
@@ -109,6 +111,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
 
         db.Products.Add(product);
         await db.SaveChangesAsync(ct);
+        await dashboardCache.InvalidateAsync(ct);
 
         return await GetByIdAsync(product.Id, ct);
     }
@@ -148,6 +151,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
         product.UpdatedAt = clock.GetUtcNow().UtcDateTime;
 
         await db.SaveChangesAsync(ct);
+        await dashboardCache.InvalidateAsync(ct);
         return await GetByIdAsync(id, ct);
     }
 
@@ -161,7 +165,13 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
             .ExecuteUpdateAsync(set => set
                 .SetProperty(p => p.DeletedAt, now)
                 .SetProperty(p => p.UpdatedAt, now), ct);
-        return deletedRows == 0 ? NotFound : Result.Success();
+        if (deletedRows == 0)
+        {
+            return NotFound;
+        }
+
+        await dashboardCache.InvalidateAsync(ct);
+        return Result.Success();
     }
 
     private IQueryable<Product> ApplyProductQuery(ProductQuery query)

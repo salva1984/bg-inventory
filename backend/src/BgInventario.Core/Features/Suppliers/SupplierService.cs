@@ -1,12 +1,16 @@
 using System.Linq.Expressions;
 using BgInventario.Core.Common;
 using BgInventario.Core.Entities;
+using BgInventario.Core.Features.Dashboard;
 using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Suppliers;
 
-/// <summary>Supplier use cases: listing, CRUD and the business rules (unique name, cannot delete if in use).</summary>
-public sealed class SupplierService(IAppDbContext db, TimeProvider clock)
+/// <summary>
+/// Supplier use cases: listing, CRUD and the business rules (unique name, cannot delete if in use).
+/// Every successful write invalidates the dashboard summary, which shows supplier count and names.
+/// </summary>
+public sealed class SupplierService(IAppDbContext db, TimeProvider clock, DashboardCache dashboardCache)
 {
     public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("supplier.not_found", "El proveedor no existe.");
     public static readonly ErrorDetail DuplicateName = ErrorDetail.Conflict("supplier.duplicate_name", "Ya existe un proveedor con ese nombre.");
@@ -61,6 +65,7 @@ public sealed class SupplierService(IAppDbContext db, TimeProvider clock)
         Apply(supplier, request);
         db.Suppliers.Add(supplier);
         await db.SaveChangesAsync(ct);
+        await dashboardCache.InvalidateAsync(ct);
 
         return new SupplierItem(supplier.Id, supplier.Name, supplier.ContactEmail, supplier.Phone, ProductCount: 0);
     }
@@ -82,6 +87,7 @@ public sealed class SupplierService(IAppDbContext db, TimeProvider clock)
 
         Apply(supplier, request);
         await db.SaveChangesAsync(ct);
+        await dashboardCache.InvalidateAsync(ct);
 
         return await GetByIdAsync(id, ct);
     }
@@ -105,6 +111,7 @@ public sealed class SupplierService(IAppDbContext db, TimeProvider clock)
         // Soft delete: the row stays for history and the query filter hides it from now on.
         supplier.DeletedAt = clock.GetUtcNow().UtcDateTime;
         await db.SaveChangesAsync(ct);
+        await dashboardCache.InvalidateAsync(ct);
         return Result.Success();
     }
 

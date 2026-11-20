@@ -5,17 +5,20 @@ namespace BgInventario.Core.Features.Dashboard;
 
 /// <summary>
 /// Business summary for the dashboard. Every number is an aggregate computed by the database
-/// (indexed GROUP BY / SUM / COUNT), so nothing is cached: the page always shows current data.
-/// Deleted products and their lots are left out by the global soft-delete filter.
+/// (GROUP BY / SUM / COUNT); the result is kept in <see cref="DashboardCache"/> until a product
+/// or supplier changes. Deleted products and their lots are left out by the global soft-delete filter.
 /// </summary>
-public sealed class DashboardService(IAppDbContext db)
+public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
 {
     // Length of the ranked lists: enough to act on, short enough to read at a glance.
     private const int TopSuppliers = 8;
     private const int TopProducts = 5;
 
+    public async Task<DashboardSummary> GetSummaryAsync(CancellationToken ct) =>
+        await cache.GetOrCreateAsync(async token => await ComputeSummaryAsync(token), ct);
+
     // The queries run one after another: a DbContext does not allow parallel queries.
-    public async Task<DashboardSummary> GetSummaryAsync(CancellationToken ct)
+    private async Task<DashboardSummary> ComputeSummaryAsync(CancellationToken ct)
     {
         var totals = await GetTotalsAsync(ct);
         var valueBySupplier = await GetValueBySupplierAsync(ct);

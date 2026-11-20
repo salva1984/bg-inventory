@@ -1,5 +1,7 @@
 using BgInventario.Core.Features.Dashboard;
 using BgInventario.Core.Features.Products;
+using BgInventario.Core.Features.Suppliers;
+using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Tests;
 
@@ -7,12 +9,14 @@ public sealed class DashboardServiceTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly ProductService _products;
+    private readonly SupplierService _suppliers;
     private readonly DashboardService _service;
 
     public DashboardServiceTests()
     {
-        _products = new ProductService(_db.Context, TimeProvider.System);
-        _service = new DashboardService(_db.Context);
+        _products = new ProductService(_db.Context, TimeProvider.System, _db.DashboardCache);
+        _suppliers = new SupplierService(_db.Context, TimeProvider.System, _db.DashboardCache);
+        _service = new DashboardService(_db.Context, _db.DashboardCache);
     }
 
     [Fact]
@@ -72,6 +76,43 @@ public sealed class DashboardServiceTests : IDisposable
         Assert.Equal(0, summary.Totals.ProductCount);
         Assert.Equal(0, summary.Totals.TotalUnits);
         Assert.Empty(summary.LowestStock);
+    }
+
+    [Fact]
+    public async Task Summary_is_cached_until_a_product_changes()
+    {
+        var (a, _) = await _db.SeedSuppliersAsync();
+        await CreateProductAsync("P1", "Monitor", [new(null, a.Id, "L1", 10m, 1)]);
+        await _service.GetSummaryAsync(default);
+
+        // Un cambio que no pasa por los servicios (por ejemplo, un script en la base) no se ve
+        // hasta que el caché vence: confirma que la segunda lectura no volvió a consultar.
+        await using (var outsideChange = _db.CreateContext())
+        {
+            var lot = await outsideChange.InventoryLots.SingleAsync();
+            lot.Stock = 100;
+            await outsideChange.SaveChangesAsync();
+        }
+        var cached = await _service.GetSummaryAsync(default);
+        Assert.Equal(1, cached.Totals.TotalUnits);
+
+        // Guardar un producto invalida el resumen y la siguiente lectura trae los datos actuales.
+        await CreateProductAsync("P2", "Parlante", [new(null, a.Id, "L2", 10m, 5)]);
+        var fresh = await _service.GetSummaryAsync(default);
+        Assert.Equal(105, fresh.Totals.TotalUnits);
+    }
+
+    [Fact]
+    public async Task Renaming_a_supplier_invalidates_the_summary()
+    {
+        var (a, _) = await _db.SeedSuppliersAsync();
+        await CreateProductAsync("P1", "Monitor", [new(null, a.Id, "L1", 10m, 1)]);
+        await _service.GetSummaryAsync(default);
+
+        await _suppliers.UpdateAsync(a.Id, new SaveSupplierRequest("Proveedor Renombrado", null, null), default);
+        var summary = await _service.GetSummaryAsync(default);
+
+        Assert.Equal("Proveedor Renombrado", summary.ValueBySupplier.Single().SupplierName);
     }
 
     private async Task<int> CreateProductAsync(string code, string name, SaveInventoryLotRequest[] lots)
