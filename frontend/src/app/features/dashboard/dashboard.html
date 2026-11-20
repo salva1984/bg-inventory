@@ -69,6 +69,7 @@
             <tr>
               <th>Producto</th>
               <th class="num col-count">Existencias</th>
+              <th class="col-action">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -81,6 +82,12 @@
                   } @else {
                     {{ product.totalStock | number }}
                   }
+                </td>
+                <td class="actions">
+                  <button mat-button (click)="openForm(product.id)">
+                    <mat-icon>{{ isAdmin ? 'edit' : 'visibility' }}</mat-icon>
+                    {{ isAdmin ? 'Editar' : 'Ver' }}
+                  </button>
                 </td>
               </tr>
             }
@@ -101,6 +108,7 @@
               <th>Producto</th>
               <th class="num col-money">Precio</th>
               <th class="num col-spread">Diferencia</th>
+              <th class="col-action">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -112,6 +120,12 @@
                   <span class="detail">hasta {{ product.maxPrice | currency:'USD' }}</span>
                 </td>
                 <td class="num">+{{ product.spreadPercent | number:'1.0-1' }} %</td>
+                <td class="actions">
+                  <button mat-button (click)="openForm(product.id)">
+                    <mat-icon>{{ isAdmin ? 'edit' : 'visibility' }}</mat-icon>
+                    {{ isAdmin ? 'Editar' : 'Ver' }}
+                  </button>
+                </td>
               </tr>
             }
           </tbody>

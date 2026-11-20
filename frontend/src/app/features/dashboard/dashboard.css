@@ -74,6 +74,15 @@
 .col-spread {
   width: 110px;
 }
+/* Columna de acciones: icono y una palabra. */
+.col-action {
+  width: 120px;
+  text-align: center;
+}
+.panel td.actions {
+  padding: 10px 4px;
+  text-align: center;
+}
 
 /* ---------- Barras por proveedor ---------- */
 /* Cada fila: nombre, barra y cifra; las barras comparten la misma línea de inicio. */
