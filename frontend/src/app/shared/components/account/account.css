@@ -1,0 +1,47 @@
+/* Avatar, texto y botón en una fila; el texto absorbe el espacio libre. */
+:host {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.account-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En pantallas pequeñas (mismo punto de corte que la barra) solo quedan avatar y botón. */
+@media (max-width: 800px) {
+  :host {
+    display: flex;
+  }
+
+  .account-text {
+    display: none;
+  }
+}
