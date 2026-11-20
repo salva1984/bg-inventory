@@ -16,12 +16,14 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
   const token = authService.session?.accessToken;
   // Sin sesión (por ejemplo en el login) la petición sale tal cual.
-  let authorized = request;
+  let authorizedRequest = request;
   if (token) {
-    authorized = request.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+    authorizedRequest = request.clone(
+      { setHeaders: { Authorization: `Bearer ${token}` } 
+    });
   }
 
-  return next(authorized).pipe(catchError(error => {
+  return next(authorizedRequest).pipe(catchError(error => {
     // Sin sesión, un 401 es solo un login fallido y lo maneja la pantalla de login.
     if (error instanceof HttpErrorResponse && error.status === 401 && authService.session) {
       authService.expireSession();
