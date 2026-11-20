@@ -2,17 +2,21 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Subscription } from 'rxjs';
+import { dialogSize } from '../../core/constants/ui';
 import { PriceMatrixResponse, PriceMatrixRow } from '../../interfaces/price-matrix';
 import { SupplierOption } from '../../interfaces/supplier';
+import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { errorMessage } from '../../shared/utils/error-message';
+import { ProductForm, ProductFormData } from '../products/product-form/product-form';
 
 /** Matriz producto × proveedor con el precio mínimo y las existencias de cada cruce. */
 @Component({
@@ -33,6 +37,9 @@ import { errorMessage } from '../../shared/utils/error-message';
 export class PriceMatrix implements OnInit, OnDestroy {
   private productService = inject(ProductService);
   private supplierService = inject(SupplierService);
+  private dialog = inject(MatDialog);
+
+  isAdmin = inject(AuthService).isAdmin;
 
   // Filtros y página actual.
   search = signal('');
@@ -43,6 +50,7 @@ export class PriceMatrix implements OnInit, OnDestroy {
   suppliers = signal<SupplierOption[]>([]);
   loading = signal(false);
   error = signal('');
+  notice = signal('');
 
   // Petición en curso
   private request?: Subscription;
@@ -98,6 +106,21 @@ export class PriceMatrix implements OnInit, OnDestroy {
   goToPage(page: number) {
     this.page.set(page);
     this.load();
+  }
+
+  // Abre el mismo formulario que el listado; si se guardó algo, se recarga la matriz.
+  openForm(productId: number) {
+    const dialogRef = this.dialog.open<ProductForm, ProductFormData, boolean>(ProductForm, {
+      ...dialogSize,
+      ariaLabelledBy: 'dialog-title',
+      data: { id: productId },
+    });
+
+    dialogRef.afterClosed().subscribe(saved => {
+      if (!saved) return;
+      this.notice.set('Producto guardado.');
+      this.load();
+    });
   }
 
   private fail(error: unknown) {

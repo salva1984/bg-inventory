@@ -24,95 +24,15 @@
 }
 
 /* Los enlaces ocupan el espacio libre y empujan la cuenta hacia abajo. */
-.navigation {
-  display: flex;
+.sidebar-navigation {
   flex: 1;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.navigation a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  color: var(--muted-foreground);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-/* Los iconos acompañan a las etiquetas, que siempre permanecen visibles. */
-.navigation svg {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.navigation a:hover {
-  background: var(--muted);
-  color: var(--foreground);
-}
-
-.navigation a:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* La sección actual se marca con fondo suave, texto en negrita e icono en el color primario. */
-.navigation a.selected {
-  background: var(--accent);
-  color: var(--foreground);
-  font-weight: 600;
-}
-
-.navigation a.selected svg {
-  color: var(--primary);
 }
 
 /* ---------- Cuenta ---------- */
-.account {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px 10px;
+/* La cuenta se separa de los enlaces con una línea; su interior lo define el componente. */
+.sidebar-account {
   padding-top: 16px;
   border-top: 1px solid var(--border);
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-foreground);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.account-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-  line-height: 1.2;
-}
-
-.account-name {
-  max-width: 100%;
-  overflow: hidden;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ---------- Contenido ---------- */
@@ -143,27 +63,16 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .account {
-    display: flex;
+  .sidebar-account {
     margin-left: auto;
     padding-top: 0;
     border-top: 0;
   }
 
-  .account-text {
-    display: none;
-  }
-
-  .navigation {
+  .sidebar-navigation {
     order: 3;
     flex: none;
-    flex-direction: row;
     width: 100%;
-    overflow-x: auto;
-  }
-
-  .navigation a {
-    white-space: nowrap;
   }
 
   .content {

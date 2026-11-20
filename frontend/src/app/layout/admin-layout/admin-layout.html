@@ -2,37 +2,11 @@
 <aside class="sidebar">
   <app-brand class="sidebar-brand" />
 
-  <!-- Enlaces: el fondo y el icono coloreado marcan la sección actual. -->
-  <nav class="navigation" aria-label="Navegación principal">
-    <a routerLink="/products" routerLinkActive="selected" ariaCurrentWhenActive="page">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7 12 3l8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg>
-      <span>Productos</span>
-    </a>
-    <a routerLink="/price-matrix" routerLinkActive="selected" ariaCurrentWhenActive="page">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg>
-      <span>Matriz de precios</span>
-    </a>
-    <a routerLink="/suppliers" routerLinkActive="selected" ariaCurrentWhenActive="page">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 5h11v11H3zM14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-      <span>Proveedores</span>
-    </a>
-  </nav>
+  <!-- Enlaces de las secciones; ocupan el espacio libre y empujan la cuenta hacia abajo. -->
+  <app-navigation class="sidebar-navigation" />
 
   <!-- Cuenta al pie de la barra. -->
-  <div class="account">
-    <span class="avatar" aria-hidden="true">{{ initials }}</span>
-    <span class="account-text">
-      <span class="account-name">{{ fullName }}</span>
-      <span class="badge" [class.badge-primary]="isAdmin">{{ roleLabel }}</span>
-    </span>
-    <button
-      mat-icon-button
-      matTooltip="Salir"
-      aria-label="Salir"
-      (click)="logout()">
-      <mat-icon>logout</mat-icon>
-    </button>
-  </div>
+  <app-account class="sidebar-account" />
 </aside>
 
 <main class="content">

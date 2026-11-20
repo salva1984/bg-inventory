@@ -3,6 +3,7 @@
 </header>
 
 @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+@if (notice()) { <div class="message success" role="status">{{ notice() }}</div> }
 
 <section aria-label="Resultados" [attr.aria-busy]="loading()">
   <div class="filters">
@@ -40,27 +41,34 @@
           <colgroup>
             <col class="col-product">
             @for (supplier of matrix.suppliers; track supplier.id) { <col class="col-supplier"> }
+            <col class="col-actions">
           </colgroup>
           <thead>
             <tr>
               <th>Producto</th>
               @for (supplier of matrix.suppliers; track supplier.id) { <th class="num">{{ supplier.name }}</th> }
+              <th><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
             @for (item of matrix.products.items; track item.productId) {
               @let lowest = lowestPrice(item);
               <tr>
-                <td><strong class="truncate" [title]="item.name">{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
+                <td><strong class="truncate" [title]="item.name">{{ item.name }}</strong>
+                  <span class="detail code">{{ item.code }}</span></td>
                 @for (supplier of matrix.suppliers; track supplier.id) {
                   @let cell = item.cells[supplier.id];
                   <td class="num" [class.lowest]="cell?.price === lowest">
                     @if (cell) {
                       @if (cell.price === lowest) { <span class="lowest-label">Más barato</span> }
-                      {{ cell.price | currency:'USD' }}<span class="detail">{{ cell.stock }} unidades, {{ cell.lots }} lote(s)</span>
+                      {{ cell.price | currency:'USD' }}
+                      <span class="detail">{{ cell.stock }} unidades, {{ cell.lots }} lote(s)</span>
                     } @else { — }
                   </td>
                 }
+                <td class="actions">
+                  <button mat-button (click)="openForm(item.productId)">{{ isAdmin ? 'Editar' : 'Ver detalle' }}</button>
+                </td>
               </tr>
             }
           </tbody>
