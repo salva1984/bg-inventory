@@ -29,6 +29,19 @@ public sealed class ProductServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PriceMatrix_lists_every_supplier_even_without_lots_on_the_page()
+    {
+        var (a, b) = await _db.SeedSuppliersAsync();
+        await _service.CreateAsync(new SaveProductRequest("P1", "Producto", null,
+            [new(null, a.Id, "L1", 10m, 1)]), default);
+
+        var matrix = await _service.GetPriceMatrixAsync(new ProductQuery(), default);
+
+        // El proveedor B no tiene lotes en esta página y aun así es una columna.
+        Assert.Equal([a.Id, b.Id], matrix.Suppliers.Select(s => s.Id).Order());
+    }
+
+    [Fact]
     public async Task Create_with_existing_code_returns_conflict()
     {
         await _service.CreateAsync(new SaveProductRequest("P1", "Producto", null, []), default);

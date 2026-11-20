@@ -46,12 +46,11 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
 
         var cells = await GetMatrixCellsAsync(page.Items.Select(p => p.Id).ToList(), ct);
 
-        // Matrix columns: only the suppliers that appear in this page.
-        var suppliers = cells
-            .DistinctBy(c => c.SupplierId)
-            .OrderBy(c => c.SupplierName)
-            .Select(c => new PriceMatrixSupplier(c.SupplierId, c.SupplierName))
-            .ToList();
+        // Matrix columns: every supplier, so the columns are the same on every page and filter.
+        var suppliers = await db.Suppliers.AsNoTracking()
+            .OrderBy(s => s.Name)
+            .Select(s => new PriceMatrixSupplier(s.Id, s.Name))
+            .ToListAsync(ct);
 
         var cellsByProduct = cells.ToLookup(c => c.ProductId);
         var rows = page.Items
