@@ -1,9 +1,11 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, provideZonelessChangeDetection } from '@angular/core';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS, MatFormFieldDefaultOptions } from '@angular/material/form-field';
 import { MAT_SELECT_CONFIG, MatSelectConfig } from '@angular/material/select';
 import { provideRouter } from '@angular/router';
+import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { errorLogInterceptor } from './core/interceptors/error-log.interceptor';
 import { routes } from './app.routes';
 
 // Todos los campos son con borde y sin el hueco fijo que Material reserva debajo
@@ -24,7 +26,10 @@ export const appConfig: ApplicationConfig = {
     // Sin zone.js: la pantalla se actualiza cuando cambia un signal o hay un evento del template.
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    // authInterceptor agrega el token; errorLogInterceptor registra las peticiones sin respuesta.
+    provideHttpClient(withInterceptors([authInterceptor, errorLogInterceptor])),
+    // Errores no controlados del navegador: se registran (consola y API) y se avisa al usuario.
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: formFieldDefaults },
     { provide: MAT_SELECT_CONFIG, useValue: selectDefaults },
   ],
