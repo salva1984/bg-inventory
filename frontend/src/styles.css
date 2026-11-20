@@ -64,6 +64,9 @@
   --mat-button-text-container-shape: var(--radius-sm);
   --mat-dialog-container-shape: 10px;
   --mat-form-field-container-text-font: var(--font-sans);
+  /* El tooltip usa la fuente small del sistema, que sin definir cae a una serif. */
+  --mat-sys-body-small-font: var(--font-sans);
+  --mat-tooltip-supporting-text-font: var(--font-sans);
 
   /* Densidad: Material es amplio por defecto; aquí se bajan alturas y tamaños de texto. */
   --mat-form-field-container-height: 40px;
