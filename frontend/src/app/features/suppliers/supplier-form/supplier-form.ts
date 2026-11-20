@@ -1,9 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { notBlankPattern } from '../../../core/constants/validation';
 import { Supplier, SupplierInput } from '../../../interfaces/supplier';
 import { SupplierService } from '../../../services/supplier.service';
 import { errorMessage } from '../../../shared/utils/error-message';
@@ -31,7 +32,8 @@ export class SupplierForm {
   busy = signal(false);
   error = signal('');
 
-  canSave = computed(() => !this.busy() && this.name().trim() !== '');
+  // Patrón expuesto al template para rechazar un nombre de solo espacios.
+  readonly notBlankPattern = notBlankPattern;
 
   save() {
     this.busy.set(true);

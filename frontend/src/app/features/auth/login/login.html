@@ -4,7 +4,7 @@
     <app-brand class="inverse" />
   </section>
 
-  <form class="login-form" (ngSubmit)="login()">
+  <form class="login-form" #loginForm="ngForm" (ngSubmit)="login()">
     <h1>Iniciar sesión</h1>
     <p class="hint">Ingresa con tu correo y contraseña.</p>
     @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
@@ -16,8 +16,11 @@
           [(ngModel)]="email"
           type="email"
           required
+          email
           maxlength="254"
           autocomplete="username">
+      <!-- mat-error solo aparece cuando el campo es inválido y ya se tocó. -->
+      <mat-error>Ingresa un correo válido.</mat-error>
     </mat-form-field>
     <mat-form-field>
       <mat-label>Contraseña</mat-label>
@@ -29,8 +32,9 @@
           required
           maxlength="100"
           autocomplete="current-password">
+      <mat-error>Ingresa tu contraseña.</mat-error>
     </mat-form-field>
-    <button mat-flat-button type="submit" [disabled]="!canSubmit()">
+    <button mat-flat-button type="submit" [disabled]="busy() || loginForm.invalid">
       {{ busy() ? 'Ingresando…' : 'Ingresar' }}
     </button>
   </form>

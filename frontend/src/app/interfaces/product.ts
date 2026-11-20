@@ -14,7 +14,8 @@ export interface Product {
 // Un lote es el registro de inventario de un producto con un proveedor.
 export interface Lot {
   id: number | null;
-  supplierId: number;
+  // null solo en un lote nuevo del formulario, antes de elegir proveedor.
+  supplierId: number | null;
   supplierName?: string;
   lotNumber: string;
   price: number;

@@ -9,11 +9,14 @@
     <div class="form-grid">
       <mat-form-field class="full">
         <mat-label>Nombre</mat-label>
-        <input matInput name="name" [(ngModel)]="name" required maxlength="150">
+        <input matInput name="name" [(ngModel)]="name" required [pattern]="notBlankPattern" maxlength="150">
+        <!-- mat-error solo aparece cuando el campo es inválido y ya se tocó. -->
+        <mat-error>Ingresa el nombre.</mat-error>
       </mat-form-field>
       <mat-form-field>
         <mat-label>Correo</mat-label>
         <input matInput name="email" [(ngModel)]="contactEmail" type="email" email maxlength="150">
+        <mat-error>Ingresa un correo válido, por ejemplo ventas&#64;proveedor.com.</mat-error>
       </mat-form-field>
       <mat-form-field>
         <mat-label>Teléfono</mat-label>
@@ -21,11 +24,15 @@
       </mat-form-field>
     </div>
     <div class="dialog-actions">
+      <!-- El botón queda deshabilitado mientras falte algo; este aviso explica por qué. -->
+      @if (supplierForm.invalid) {
+        <span class="form-hint">Completa los campos obligatorios (*) para guardar.</span>
+      }
       <button mat-button type="button" (click)="close()">Cancelar</button>
       <button
           mat-flat-button
           type="submit"
-          [disabled]="!canSave() || supplierForm.invalid">Guardar proveedor</button>
+          [disabled]="busy() || supplierForm.invalid">Guardar proveedor</button>
     </div>
   </form>
 </section>

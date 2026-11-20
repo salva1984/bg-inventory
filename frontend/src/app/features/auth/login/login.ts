@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -24,8 +24,6 @@ export class Login {
   busy = signal(false);
   // Si el interceptor venció la sesión, se avisa al llegar aquí.
   error = signal(this.authService.sessionExpired ? 'Tu sesión ha expirado. Inicia sesión de nuevo.' : '');
-
-  canSubmit = computed(() => !this.busy() && this.email().trim() !== '' && this.password() !== '');
 
   login() {
     this.busy.set(true);

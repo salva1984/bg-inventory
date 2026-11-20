@@ -301,6 +301,13 @@ td strong {
   color: var(--accent-foreground);
 }
 
+/* Aviso junto al botón de guardar deshabilitado: explica qué falta. */
+.form-hint {
+  margin-right: auto;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
 /* ---------- Diálogo de edición ---------- */
 .dialog {
   padding: 24px;
@@ -320,6 +327,8 @@ td strong {
   grid-template-columns: 1fr 1fr;
   /* El espacio entre filas deja lugar a la etiqueta flotante del campo de abajo. */
   gap: 14px 12px;
+  /* Cada campo conserva su altura: si uno muestra un error debajo, los vecinos no se estiran. */
+  align-items: start;
 }
 .form-grid mat-form-field {
   width: 100%;
@@ -330,6 +339,7 @@ td strong {
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   margin-top: 16px;
   padding-top: 14px;

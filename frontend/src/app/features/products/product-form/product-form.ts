@@ -5,6 +5,14 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import {
+  maxPrice,
+  maxStock,
+  minPrice,
+  notBlankPattern,
+  pricePattern,
+  wholeNumberPattern,
+} from '../../../core/constants/validation';
 import { Lot, ProductInput } from '../../../interfaces/product';
 import { SupplierOption } from '../../../interfaces/supplier';
 import { AuthService } from '../../../services/auth.service';
@@ -46,20 +54,23 @@ export class ProductForm implements OnInit {
   busy = signal(false);
   error = signal('');
 
+  // Reglas de validación expuestas al template; las comprueban los validadores de cada campo.
+  readonly notBlankPattern = notBlankPattern;
+  readonly pricePattern = pricePattern;
+  readonly wholeNumberPattern = wholeNumberPattern;
+  readonly minPrice = minPrice;
+  readonly maxPrice = maxPrice;
+  readonly maxStock = maxStock;
+
   get title() {
     if (!this.isEditing) return 'Nuevo producto';
     if (this.isAdmin) return 'Editar producto';
     return 'Detalle del producto';
   }
 
-  // Es un getter y no un computed porque los lotes se modifican en el lugar (ngModel)
-  // y un computed no se enteraría. Angular lo vuelve a leer tras cada evento del formulario.
-  get canSave() {
-    const hasRequiredText = this.code().trim() !== '' && this.name().trim() !== '';
-    // Cada lote necesita proveedor, número de lote y existencias enteras.
-    const lotsAreValid = this.lots().every(lot =>
-      lot.supplierId && lot.lotNumber.trim() !== '' && Number.isInteger(Number(lot.stock)));
-    return !this.busy() && hasRequiredText && lotsAreValid;
+  // Se puede editar si es administrador y no hay una carga o un guardado en curso.
+  get canEdit() {
+    return this.isAdmin && !this.busy();
   }
 
   ngOnInit() {
@@ -90,7 +101,8 @@ export class ProductForm implements OnInit {
   }
 
   addLot() {
-    const newLot: Lot = { id: null, supplierId: 0, lotNumber: '', price: 0.01, stock: 0 };
+    // Sin proveedor elegido (null) para que el campo obligatorio lo marque como pendiente.
+    const newLot: Lot = { id: null, supplierId: null, lotNumber: '', price: minPrice, stock: 0 };
     this.lots.update(lots => [...lots, newLot]);
   }
 
