@@ -1,12 +1,23 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Publica el frontend Angular en Azure App Service (Web App "front-angular", Linux, Node 24)
+# con cada push a main que lo modifique.
+# Docs: https://github.com/Azure/webapps-deploy
+#
+# Requiere en GitHub (Settings → Secrets and variables → Actions):
+#   - Los secretos AZUREAPPSERVICE_* que creó Azure al conectar el Deployment Center (inicio de sesión OIDC).
+# Opcional:
+#   - Variable API_URL: reemplaza la URL de la API por defecto (la Container App bg-backend).
 
-name: Build and deploy Node.js app to Azure Web App - front-angular
+name: Build and deploy Angular app to Azure Web App - front-angular
 
 on:
   push:
     branches:
       - 'main'
+    # Un cambio solo en el backend no vuelve a publicar el frontend.
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/main_front-angular.yml'
+  # Permite publicar a mano desde la pestaña Actions (por ejemplo, después de cambiar API_URL).
   workflow_dispatch:
 
 jobs:
@@ -18,22 +29,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Angular 22 exige Node ^22.22 o ^24.15.
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '24.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
 
+      # environment.ts trae el marcador __API_URL__. Por defecto apunta a la API en Azure Container Apps;
+      # la variable API_URL del repositorio permite cambiarla sin tocar el workflow.
+      - name: Inyectar la URL de la API
+        working-directory: frontend
+        env:
+          API_URL: ${{ vars.API_URL || 'https://bg-backend.wonderfulflower-12bfbb1b.westus3.azurecontainerapps.io/api' }}
+        run: sed -i "s|__API_URL__|$API_URL|" src/environments/environment.ts
+
+      - name: Compilar
+        working-directory: frontend
+        run: npm run build
+
+      # Solo se sube el build (index.html, js y css), no el repositorio completo.
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: angular-app
+          path: frontend/dist/inventory/browser
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,8 +71,8 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: angular-app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,6 +80,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_94B46D528D52489195671C0D93B7CDFF }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9FFF0ED62389472CAC3781DC5DEA6B51 }}
 
+      # App Service con Node no sirve archivos estáticos por sí solo. PM2 (incluido en la imagen de
+      # Node de App Service) los sirve, y --spa devuelve index.html para las rutas de Angular
+      # (/products, /dashboard), así recargar una página no da 404.
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -62,4 +90,4 @@ jobs:
           app-name: 'front-angular'
           slot-name: 'Production'
           package: .
-          
+          startup-command: 'pm2 serve /home/site/wwwroot --no-daemon --spa'

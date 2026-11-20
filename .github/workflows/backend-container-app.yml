@@ -1,0 +1,126 @@
+# Publica la API en Azure Container Apps (app "bg-backend", grupo "bg-inv") con cada push a main que
+# la modifique: corre los tests, construye la imagen, la sube a ACR y actualiza la app.
+#
+# Se escribe a mano porque el entorno de la app es "express", que no admite el asistente de
+# despliegue continuo del portal. Sí admite imágenes privadas, secretos y actualizar la imagen por CLI.
+#
+# Requiere en GitHub (Settings → Secrets and variables → Actions → Secrets):
+#   - AZUREAPPSERVICE_CLIENTID_*, _TENANTID_*, _SUBSCRIPTIONID_*: la identidad que Azure creó para el
+#     workflow del frontend. Se reutiliza; necesita el rol Contributor sobre el grupo de recursos bg-inv.
+#   - ACR_USERNAME / ACR_PASSWORD: usuario administrador del registro (bgcontainers → Access keys).
+#   - DB_CONNECTION_STRING: connection string de Azure SQL, con la contraseña.
+#   - JWT_KEY: clave para firmar los tokens (32+ caracteres).
+#   - SEED_ADMIN_PASSWORD / SEED_VIEWER_PASSWORD: contraseñas de los usuarios iniciales.
+# La configuración que no es secreta vive en el paso "Actualizar la Container App", versionada aquí.
+
+name: Build and deploy API to Azure Container Apps - bg-backend
+
+on:
+  push:
+    branches:
+      - 'main'
+    # Un cambio solo en el frontend no vuelve a publicar la API.
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-container-app.yml'
+  # Permite publicar a mano desde la pestaña Actions (por ejemplo, después de cambiar un secreto).
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: bg-inv
+  CONTAINER_APP: bg-backend
+  REGISTRY: bgcontainers.azurecr.io
+  # Cada imagen se etiqueta con el commit que la generó: se sabe qué código corre en Azure.
+  IMAGE: bgcontainers.azurecr.io/bg-backend:${{ github.sha }}
+
+jobs:
+  # Si un test falla, no se publica nada.
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Tests
+        working-directory: backend
+        run: dotnet test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+    steps:
+      - uses: actions/checkout@v4
+
+      # Construye con el Dockerfile del backend; el contexto es backend/ porque copia la solución y src/.
+      - name: Construir y subir la imagen
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          echo "$ACR_PASSWORD" | docker login "$REGISTRY" --username "$ACR_USERNAME" --password-stdin
+          docker build --tag "$IMAGE" ./backend
+          docker push "$IMAGE"
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_CA0CAEBCACB74907A23F5F1A393791C2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_94B46D528D52489195671C0D93B7CDFF }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9FFF0ED62389472CAC3781DC5DEA6B51 }}
+
+      # Credenciales con las que la app descarga la imagen del registro privado.
+      - name: Configurar el registro en la app
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: >
+          az containerapp registry set
+          --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP"
+          --server "$REGISTRY"
+          --username "$ACR_USERNAME"
+          --password "$ACR_PASSWORD"
+
+      # Los secretos de GitHub pasan a ser secretos de la Container App (no quedan en texto plano en la app).
+      # Llegan como variables de entorno del paso, no insertados en el comando: así un "$" o una comilla
+      # en una contraseña no los interpreta la shell.
+      - name: Actualizar los secretos de la app
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+          SEED_VIEWER_PASSWORD: ${{ secrets.SEED_VIEWER_PASSWORD }}
+        run: >
+          az containerapp secret set
+          --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP"
+          --secrets
+          db-connection="$DB_CONNECTION_STRING"
+          jwt-key="$JWT_KEY"
+          seed-admin-password="$SEED_ADMIN_PASSWORD"
+          seed-viewer-password="$SEED_VIEWER_PASSWORD"
+
+      # Imagen nueva y configuración de la API. Las variables secretas apuntan a los secretos de arriba
+      # (secretref); las demás son valores fijos. Una sola réplica: la migración al arrancar y el caché
+      # en memoria del dashboard asumen una instancia; con 0 mínimas la app no consume si nadie la usa.
+      - name: Actualizar la Container App
+        run: >
+          az containerapp update
+          --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP"
+          --image "$IMAGE"
+          --min-replicas 0 --max-replicas 1
+          --set-env-vars
+          ConnectionStrings__Default=secretref:db-connection
+          Jwt__Key=secretref:jwt-key
+          Seed__AdminPassword=secretref:seed-admin-password
+          Seed__ViewerPassword=secretref:seed-viewer-password
+          Database__MigrateOnStartup=true
+          Seed__SampleData=true
+          Seed__SampleProductCount=200
+          Swagger__Enabled=true
