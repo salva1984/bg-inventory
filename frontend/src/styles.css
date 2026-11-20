@@ -215,7 +215,7 @@ th {
   background: var(--muted);
   color: var(--muted-foreground);
   font-size: 15px;
-  font-weight: 400;
+  font-weight: 600;
   white-space: nowrap;
 }
 tbody tr:hover {
