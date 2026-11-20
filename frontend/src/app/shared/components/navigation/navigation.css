@@ -1,0 +1,67 @@
+/* Enlaces en columna dentro de la barra lateral. */
+:host {
+  display: block;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navigation a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Los iconos acompañan a las etiquetas, que siempre permanecen visibles. */
+.navigation svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.navigation a:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.navigation a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* La sección actual se marca con fondo suave, texto en negrita e icono en el color primario. */
+.navigation a.selected {
+  background: var(--accent);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.navigation a.selected svg {
+  color: var(--primary);
+}
+
+/* En pantallas pequeñas (mismo punto de corte que la barra) los enlaces pasan a una fila con desplazamiento. */
+@media (max-width: 800px) {
+  .navigation {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .navigation a {
+    white-space: nowrap;
+  }
+}
