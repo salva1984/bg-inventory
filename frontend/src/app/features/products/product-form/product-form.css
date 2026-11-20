@@ -1,0 +1,46 @@
+/* Lotes: cada registro de inventario es una caja gris con sus cuatro campos. */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.lots-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.lot {
+  margin-bottom: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+.lot-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.lot-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 10px;
+}
+
+@media (max-width: 850px) {
+  .lot-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .lot-grid {
+    grid-template-columns: 1fr;
+  }
+}

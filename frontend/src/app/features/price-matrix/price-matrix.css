@@ -1,0 +1,36 @@
+/*
+ * La celda del proveedor más barato de cada producto se tiñe de petróleo y lleva
+ * el texto "Más barato", para que la marca no dependa solo del color.
+ */
+td.lowest {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 600;
+}
+
+td.lowest .detail {
+  color: var(--accent-foreground);
+  font-weight: 400;
+}
+
+.lowest-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/*
+ * Los nombres de proveedor son largos: se permite que el encabezado salte de línea
+ * (así se lee completo) y se reserva un ancho mínimo para la columna de producto,
+ * que de lo contrario se comprime. CSS no tiene elipsis "en medio" nativa.
+ */
+th.num {
+  min-width: 150px;
+  white-space: normal;
+}
+
+th:first-child,
+td:first-child {
+  min-width: 240px;
+}

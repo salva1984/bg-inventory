@@ -1,0 +1,37 @@
+<main class="login-page">
+  <!-- Panel petróleo: dice qué es la aplicación antes de pedir credenciales. -->
+  <section class="intro">
+    <app-brand class="inverse" />
+  </section>
+
+  <form class="login-form" (ngSubmit)="login()">
+    <h1>Iniciar sesión</h1>
+    <p class="hint">Ingresa con tu correo y contraseña.</p>
+    @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+    <mat-form-field>
+      <mat-label>Correo</mat-label>
+      <input
+          matInput
+          name="email"
+          [(ngModel)]="email"
+          type="email"
+          required
+          maxlength="254"
+          autocomplete="username">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Contraseña</mat-label>
+      <input
+          matInput
+          name="password"
+          [(ngModel)]="password"
+          type="password"
+          required
+          maxlength="100"
+          autocomplete="current-password">
+    </mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="!canSubmit()">
+      {{ busy() ? 'Ingresando…' : 'Ingresar' }}
+    </button>
+  </form>
+</main>

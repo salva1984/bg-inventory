@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BgInventario.Api/BgInventario.Api.csproj" />
+    <Project Path="src/BgInventario.Core/BgInventario.Core.csproj" />
+    <Project Path="src/BgInventario.Infrastructure/BgInventario.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BgInventario.Tests/BgInventario.Tests.csproj" />
+  </Folder>
+</Solution>

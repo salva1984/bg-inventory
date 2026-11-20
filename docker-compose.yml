@@ -1,0 +1,56 @@
+name: bginventario
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required (see .env.example)}
+    ports:
+      - "${DB_PORT:-1433}:1433"
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Aspire Dashboard: receives logs, traces and metrics over OTLP and shows them in one UI.
+  # It keeps everything in memory, so restarting the container clears the data.
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.6
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true" # local only: no login token for the UI
+    ports:
+      - "${DASHBOARD_UI_PORT:-18888}:18888"
+      # OTLP over gRPC. Published on 4317, the default OTLP port, so `dotnet run` needs no extra config.
+      - "${OTLP_PORT:-4317}:18889"
+
+  api:
+    build: ./backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${API_ENVIRONMENT:-Development}
+      ConnectionStrings__Default: "Server=db;Database=BgInventario;User ID=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: ${JWT_KEY:?JWT_KEY is required (see .env.example)}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:4200}
+      Database__MigrateOnStartup: "true"
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
+      Seed__ViewerPassword: ${SEED_VIEWER_PASSWORD:-}
+      Seed__SampleData: ${SEED_SAMPLE_DATA:-true}
+      Seed__SampleProductCount: ${SEED_SAMPLE_PRODUCT_COUNT:-200}
+      Swagger__Enabled: "true"
+      # Inside the compose network the dashboard receives OTLP on 18889 (4317 is only the host-side mapping).
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      dashboard:
+        condition: service_started
+
+volumes:
+  db-data:

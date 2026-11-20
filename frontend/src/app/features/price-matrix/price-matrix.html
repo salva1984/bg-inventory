@@ -1,0 +1,74 @@
+<header class="page-heading">
+  <h1>Matriz de precios</h1>
+</header>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+<section aria-label="Resultados" [attr.aria-busy]="loading()">
+  <div class="filters">
+    <form class="search" (ngSubmit)="applyFilters()">
+      <mat-form-field>
+        <mat-label>Buscar</mat-label>
+        <input matInput name="search" [(ngModel)]="search" placeholder="Nombre o código">
+      </mat-form-field>
+      <button mat-stroked-button type="submit">Buscar</button>
+    </form>
+    <mat-form-field>
+      <mat-label>Proveedor</mat-label>
+      <mat-select [(ngModel)]="supplierFilter" (selectionChange)="applyFilters()">
+        <mat-option value="">Todos</mat-option>
+        @for (supplier of suppliers(); track supplier.id) {
+          <mat-option [value]="supplier.id.toString()">{{ supplier.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Espacio fijo para la barra: al aparecer no desplaza la tabla. -->
+  <div class="loading-slot">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" aria-label="Cargando"></mat-progress-bar> }
+  </div>
+
+  @if (matrix(); as matrix) {
+    @if (matrix.products.totalCount === 0) {
+      <p class="empty">No hay resultados. Prueba otra búsqueda.</p>
+    } @else {
+      <p class="table-help">
+        Precio mínimo y existencias totales por proveedor; se agrupan todos sus lotes.
+        Cuando un producto tiene varios proveedores, se resalta el más barato.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              @for (supplier of matrix.suppliers; track supplier.id) { <th class="num">{{ supplier.name }}</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of matrix.products.items; track item.productId) {
+              @let lowest = lowestPrice(item);
+              <tr>
+                <td><strong>{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
+                @for (supplier of matrix.suppliers; track supplier.id) {
+                  @let cell = item.cells[supplier.id];
+                  <td class="num" [class.lowest]="cell?.price === lowest">
+                    @if (cell) {
+                      @if (cell.price === lowest) { <span class="lowest-label">Más barato</span> }
+                      {{ cell.price | currency:'USD' }}<span class="detail">{{ cell.stock }} unidades, {{ cell.lots }} lote(s)</span>
+                    } @else { — }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-pagination
+          [page]="page()"
+          [totalPages]="matrix.products.totalPages"
+          [totalCount]="matrix.products.totalCount"
+          (pageChange)="goToPage($event)" />
+    }
+  }
+</section>

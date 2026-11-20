@@ -1,0 +1,27 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.name {
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Variante sobre fondo petróleo (panel del login): el icono se invierte. */
+:host(.inverse) .mark {
+  background: var(--primary-foreground);
+  color: var(--primary);
+}

@@ -1,0 +1,64 @@
+/* Dos columnas: panel petróleo con la marca a la izquierda y el formulario a la derecha. */
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: 100vh;
+  background: var(--background);
+}
+
+/* ---------- Panel de presentación ---------- */
+.intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* ---------- Formulario ---------- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  width: min(100%, 360px);
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+h1 {
+  margin-bottom: 4px;
+}
+
+.hint {
+  margin-bottom: 24px;
+  color: var(--muted-foreground);
+}
+
+/* Sin el hueco de errores de Material, los campos necesitan su propia separación. */
+mat-form-field {
+  margin-bottom: 16px;
+}
+
+button[type='submit'] {
+  margin-top: 4px;
+  height: 40px;
+}
+
+/* ---------- Pantallas pequeñas ---------- */
+/* El panel pasa a ser una franja arriba. */
+@media (max-width: 800px) {
+  .login-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .intro {
+    padding: 24px 16px;
+  }
+
+  .login-form {
+    align-self: start;
+    padding: 32px 16px;
+  }
+}

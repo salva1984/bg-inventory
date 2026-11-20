@@ -1,0 +1,6 @@
+<span>{{ totalCount() }} resultados</span>
+<div>
+  <button mat-button (click)="pageChange.emit(page() - 1)" [disabled]="page() <= 1">Anterior</button>
+  <span>Página {{ page() }} de {{ totalPages() }}</span>
+  <button mat-button (click)="pageChange.emit(page() + 1)" [disabled]="page() >= totalPages()">Siguiente</button>
+</div>

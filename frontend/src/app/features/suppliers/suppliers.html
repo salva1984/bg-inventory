@@ -1,0 +1,65 @@
+<header class="page-heading">
+  <h1>Proveedores</h1>
+  @if (isAdmin) { <button mat-flat-button (click)="openForm()">Nuevo proveedor</button> }
+</header>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+@if (notice()) { <div class="message success" role="status">{{ notice() }}</div> }
+
+<section aria-label="Resultados" [attr.aria-busy]="loading()">
+  <div class="filters">
+    <form class="search" (ngSubmit)="applyFilters()">
+      <mat-form-field>
+        <mat-label>Buscar</mat-label>
+        <input matInput name="search" [(ngModel)]="search" placeholder="Nombre">
+      </mat-form-field>
+      <button mat-stroked-button type="submit">Buscar</button>
+    </form>
+  </div>
+
+  <!-- Espacio fijo para la barra: al aparecer no desplaza la tabla. -->
+  <div class="loading-slot">
+    @if (loading()) { <mat-progress-bar mode="indeterminate" aria-label="Cargando"></mat-progress-bar> }
+  </div>
+
+  @if (suppliers(); as suppliers) {
+    @if (suppliers.totalCount === 0) {
+      <p class="empty">No hay resultados. Prueba otra búsqueda o agrega un registro.</p>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th class="num">Productos</th>
+              @if (isAdmin) { <th><span class="sr-only">Acciones</span></th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of suppliers.items; track item.id) {
+              <tr>
+                <td><strong>{{ item.name }}</strong></td>
+                <td>{{ item.contactEmail || '—' }}</td>
+                <td>{{ item.phone || '—' }}</td>
+                <td class="num">{{ item.productCount }}</td>
+                @if (isAdmin) {
+                  <td class="actions">
+                    <button mat-button (click)="openForm(item)">Editar</button>
+                    <button mat-button class="danger" (click)="remove(item)" [disabled]="busy()">Eliminar</button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-pagination
+          [page]="page()"
+          [totalPages]="suppliers.totalPages"
+          [totalCount]="suppliers.totalCount"
+          (pageChange)="goToPage($event)" />
+    }
+  }
+</section>

@@ -1,0 +1,31 @@
+<section class="dialog">
+  <div class="dialog-heading">
+    <h2 id="dialog-title">{{ isEditing ? 'Editar' : 'Nuevo' }} proveedor</h2>
+    <button mat-button aria-label="Cerrar" (click)="close()">Cerrar</button>
+  </div>
+  @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+  <form #supplierForm="ngForm" (ngSubmit)="save()">
+    <div class="form-grid">
+      <mat-form-field class="full">
+        <mat-label>Nombre</mat-label>
+        <input matInput name="name" [(ngModel)]="name" required maxlength="150">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Correo</mat-label>
+        <input matInput name="email" [(ngModel)]="contactEmail" type="email" email maxlength="150">
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Teléfono</mat-label>
+        <input matInput name="phone" [(ngModel)]="phone" maxlength="30">
+      </mat-form-field>
+    </div>
+    <div class="dialog-actions">
+      <button mat-button type="button" (click)="close()">Cancelar</button>
+      <button
+          mat-flat-button
+          type="submit"
+          [disabled]="!canSave() || supplierForm.invalid">Guardar proveedor</button>
+    </div>
+  </form>
+</section>

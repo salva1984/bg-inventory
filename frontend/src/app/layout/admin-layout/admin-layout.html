@@ -1,0 +1,31 @@
+<!-- Barra lateral fija: la navegación vive a la izquierda y el contenido ocupa el resto del ancho. -->
+<aside class="sidebar">
+  <app-brand class="sidebar-brand" />
+
+  <!-- Enlaces: la barra de color y el fondo marcan la sección actual. -->
+  <nav class="navigation" aria-label="Navegación principal">
+    <a routerLink="/products" routerLinkActive="selected" ariaCurrentWhenActive="page">Productos</a>
+    <a routerLink="/price-matrix" routerLinkActive="selected" ariaCurrentWhenActive="page">Matriz de precios</a>
+    <a routerLink="/suppliers" routerLinkActive="selected" ariaCurrentWhenActive="page">Proveedores</a>
+  </nav>
+
+  <!-- Cuenta al pie de la barra. -->
+  <div class="account">
+    <span class="avatar" aria-hidden="true">{{ initials }}</span>
+    <span class="account-text">
+      <span class="account-name">{{ fullName }}</span>
+      <span class="badge" [class.badge-primary]="isAdmin">{{ roleLabel }}</span>
+    </span>
+    <button
+      mat-icon-button
+      matTooltip="Salir"
+      aria-label="Salir"
+      (click)="logout()">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </div>
+</aside>
+
+<main class="content">
+  <router-outlet />
+</main>
