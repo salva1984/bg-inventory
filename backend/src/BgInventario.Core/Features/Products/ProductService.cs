@@ -10,16 +10,16 @@ namespace BgInventario.Core.Features.Products;
 /// </summary>
 public sealed class ProductService(IAppDbContext db, TimeProvider clock)
 {
-    public static readonly Error NotFound = Error.NotFound("product.not_found", "El producto no existe.");
-    public static readonly Error DuplicateCode = Error.Conflict("product.duplicate_code", "Ya existe un producto con ese código.");
-    public static readonly Error DuplicateLot = Error.Validation("product.duplicate_lot", "Hay registros de inventario repetidos con el mismo proveedor y número de lote.");
-    public static readonly Error UnknownSupplier = Error.Validation("product.unknown_supplier", "Uno o más proveedores no existen.");
-    public static readonly Error UnknownLot = Error.Validation("product.unknown_lot", "Uno o más registros de inventario no pertenecen a este producto.");
+    public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("product.not_found", "El producto no existe.");
+    public static readonly ErrorDetail DuplicateCode = ErrorDetail.Conflict("product.duplicate_code", "Ya existe un producto con ese código.");
+    public static readonly ErrorDetail DuplicateLot = ErrorDetail.Validation("product.duplicate_lot", "Hay registros de inventario repetidos con el mismo proveedor y número de lote.");
+    public static readonly ErrorDetail UnknownSupplier = ErrorDetail.Validation("product.unknown_supplier", "Uno o más proveedores no existen.");
+    public static readonly ErrorDetail UnknownLot = ErrorDetail.Validation("product.unknown_lot", "Uno o más registros de inventario no pertenecen a este producto.");
 
     public Task<PagedResult<ProductListItem>> GetPagedAsync(ProductQuery query, CancellationToken ct)
     {
-        var products = Filter(query);
-        var sorted = Sort(products, query.SortBy ?? ProductSortBy.Name, query.Descending ?? false);
+        var products = ApplyProductQuery(query);
+        var sorted = SortProducts(products, query.SortBy ?? ProductSortBy.Name, query.Descending ?? false);
 
         // Projection straight to the DTO: SQL selects only these columns and computes
         // the totals on the server (no entity tracking, no N+1).
@@ -39,12 +39,12 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
 
     public async Task<PriceMatrix> GetPriceMatrixAsync(ProductQuery query, CancellationToken ct)
     {
-        var page = await Filter(query)
+        var productPageResult = await ApplyProductQuery(query)
             .OrderBy(p => p.Name)
             .Select(p => new { p.Id, p.Code, p.Name })
             .ToPagedResultAsync(query, ct);
 
-        var cells = await GetMatrixCellsAsync(page.Items.Select(p => p.Id).ToList(), ct);
+        var cells = await GetMatrixCellsAsync([.. productPageResult.Items.Select(p => p.Id)], ct);
 
         // Matrix columns: every supplier, so the columns are the same on every page and filter.
         var suppliers = await db.Suppliers.AsNoTracking()
@@ -53,7 +53,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
             .ToListAsync(ct);
 
         var cellsByProduct = cells.ToLookup(c => c.ProductId);
-        var rows = page.Items
+        var rows = productPageResult.Items
             .Select(p =>
             {
                 var productCells = cellsByProduct[p.Id].ToDictionary(c => c.SupplierId, c => c.Cell);
@@ -61,7 +61,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
             })
             .ToList();
 
-        var pagedRows = new PagedResult<PriceMatrixRow>(rows, page.Page, page.PageSize, page.TotalCount);
+        var pagedRows = new PagedResult<PriceMatrixRow>(rows, productPageResult.Page, productPageResult.PageSize, productPageResult.TotalCount);
         return new PriceMatrix(suppliers, pagedRows);
     }
 
@@ -161,14 +161,14 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
         return deletedRows == 0 ? NotFound : Result.Success();
     }
 
-    private IQueryable<Product> Filter(ProductQuery query)
+    private IQueryable<Product> ApplyProductQuery(ProductQuery query)
     {
         var products = db.Products.AsNoTracking();
-
+        
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var term = query.Search.Trim();
-            products = products.Where(p => p.Code.Contains(term) || p.Name.Contains(term));
+            var searchTerm = query.Search.Trim();
+            products = products.Where(p => p.Code.Contains(searchTerm) || p.Name.Contains(searchTerm));
         }
 
         if (query.SupplierId is { } supplierId)
@@ -183,7 +183,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
     /// Sorting is applied to the entity, before projecting: EF cannot translate an ORDER BY over a
     /// positional record. Ties on totals fall back to the name so pages are stable.
     /// </summary>
-    private static IQueryable<Product> Sort(IQueryable<Product> products, ProductSortBy sortBy, bool descending) =>
+    private static IQueryable<Product> SortProducts(IQueryable<Product> products, ProductSortBy sortBy, bool descending) =>
         (sortBy, descending) switch
         {
             (ProductSortBy.Code, false) => products.OrderBy(p => p.Code),
@@ -205,6 +205,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
     {
         var groups = await db.InventoryLots.AsNoTracking()
             .Where(lot => productIds.Contains(lot.ProductId))
+            // Group by product and supplier, so we can compute the lowest price and total stock per supplier.
             .GroupBy(lot => new { lot.ProductId, lot.SupplierId, SupplierName = lot.Supplier.Name })
             .Select(g => new
             {
@@ -218,8 +219,11 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock)
             .ToListAsync(ct);
 
         return groups
-            .Select(g => new MatrixCell(g.ProductId, g.SupplierId, g.SupplierName,
-                new PriceMatrixCell(g.LowestPrice, g.TotalStock, g.LotCount)))
+            .Select(group =>
+            {
+                var cell = new PriceMatrixCell(group.LowestPrice, group.TotalStock, group.LotCount);
+                return new MatrixCell(group.ProductId, group.SupplierId, group.SupplierName, cell);
+            })
             .ToList();
     }
 

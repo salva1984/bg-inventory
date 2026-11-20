@@ -9,7 +9,7 @@ namespace BgInventario.Api.Setup;
 /// </summary>
 public static class ResultExtensions
 {
-    public static ProblemHttpResult ToProblem(this Error error) =>
+    public static ProblemHttpResult ToProblem(this ErrorDetail error) =>
         TypedResults.Problem(
             statusCode: error.Type switch
             {

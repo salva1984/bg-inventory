@@ -17,7 +17,7 @@ public record PageQuery
 
     [Range(1, MaxPageSize)]
     public int? PageSize { get; init; }
-
+    
     internal int PageNumber => Page ?? 1;
     internal int Size => PageSize ?? DefaultPageSize;
 }
@@ -37,6 +37,6 @@ public static class PagingExtensions
         var rowsToSkip = (page.PageNumber - 1) * page.Size;
         var items = await query.Skip(rowsToSkip).Take(page.Size).ToListAsync(ct);
 
-        return new PagedResult<T>(items, page.PageNumber, page.Size, totalCount);
+        return new PagedResult<T>(Items: items, page.PageNumber, page.Size, totalCount);
     }
 }

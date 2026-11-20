@@ -8,9 +8,9 @@ namespace BgInventario.Core.Features.Suppliers;
 /// <summary>Supplier use cases: listing, CRUD and the business rules (unique name, cannot delete if in use).</summary>
 public sealed class SupplierService(IAppDbContext db, TimeProvider clock)
 {
-    public static readonly Error NotFound = Error.NotFound("supplier.not_found", "El proveedor no existe.");
-    public static readonly Error DuplicateName = Error.Conflict("supplier.duplicate_name", "Ya existe un proveedor con ese nombre.");
-    public static readonly Error InUse = Error.Conflict("supplier.in_use", "No se puede eliminar: el proveedor tiene productos asociados.");
+    public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("supplier.not_found", "El proveedor no existe.");
+    public static readonly ErrorDetail DuplicateName = ErrorDetail.Conflict("supplier.duplicate_name", "Ya existe un proveedor con ese nombre.");
+    public static readonly ErrorDetail InUse = ErrorDetail.Conflict("supplier.in_use", "No se puede eliminar: el proveedor tiene productos asociados.");
 
     // Shared projection (translated to SQL): ProductCount counts distinct products, not lots.
     private static readonly Expression<Func<Supplier, SupplierItem>> ToItem = s => new SupplierItem(

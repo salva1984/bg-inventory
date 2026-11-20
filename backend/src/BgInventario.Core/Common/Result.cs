@@ -10,12 +10,12 @@ public enum ErrorType
 }
 
 /// <summary>Business error. The API maps <see cref="Type"/> to an HTTP status (ProblemDetails).</summary>
-public sealed record Error(string Code, string Message, ErrorType Type)
+public sealed record ErrorDetail(string Code, string Message, ErrorType Type)
 {
-    public static Error Validation(string code, string message) => new(code, message, ErrorType.Validation);
-    public static Error NotFound(string code, string message) => new(code, message, ErrorType.NotFound);
-    public static Error Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
-    public static Error Unauthorized(string code, string message) => new(code, message, ErrorType.Unauthorized);
+    public static ErrorDetail Validation(string code, string message) => new(code, message, ErrorType.Validation);
+    public static ErrorDetail NotFound(string code, string message) => new(code, message, ErrorType.NotFound);
+    public static ErrorDetail Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
+    public static ErrorDetail Unauthorized(string code, string message) => new(code, message, ErrorType.Unauthorized);
 }
 
 /// <summary>
@@ -24,15 +24,15 @@ public sealed record Error(string Code, string Message, ErrorType Type)
 /// </summary>
 public class Result
 {
-    protected Result(Error? error) => Error = error;
+    protected Result(ErrorDetail? error) => Error = error;
 
-    public Error? Error { get; }
+    public ErrorDetail? Error { get; }
     public bool IsSuccess => Error is null;
 
     public static Result Success() => new(null);
-    public static Result Failure(Error error) => new(error);
+    public static Result Failure(ErrorDetail error) => new(error);
 
-    public static implicit operator Result(Error error) => Failure(error);
+    public static implicit operator Result(ErrorDetail error) => Failure(error);
 }
 
 public sealed class Result<T> : Result
@@ -40,12 +40,12 @@ public sealed class Result<T> : Result
     private readonly T? _value;
 
     private Result(T value) : base(null) => _value = value;
-    private Result(Error error) : base(error) { }
+    private Result(ErrorDetail error) : base(error) { }
 
     public T Value => IsSuccess
         ? _value!
         : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
     public static implicit operator Result<T>(T value) => new(value);
-    public static implicit operator Result<T>(Error error) => new(error);
+    public static implicit operator Result<T>(ErrorDetail error) => new(error);
 }

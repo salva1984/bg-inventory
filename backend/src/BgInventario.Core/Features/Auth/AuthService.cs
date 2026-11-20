@@ -11,8 +11,8 @@ public sealed class AuthService(
     ITokenService tokenService,
     ILogger<AuthService> logger)
 {
-    private static readonly Error InvalidCredentials =
-        Error.Unauthorized("auth.invalid_credentials", "Correo o contraseña incorrectos.");
+    private static readonly ErrorDetail InvalidCredentials =
+        ErrorDetail.Unauthorized("auth.invalid_credentials", "Correo o contraseña incorrectos.");
 
     public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
     {
@@ -40,7 +40,7 @@ public sealed class AuthService(
             .Select(u => new UserSummary(u.Id, u.Email, u.FullName, u.Role))
             .FirstOrDefaultAsync(ct);
 
-        return user is null ? Error.NotFound("auth.user_not_found", "Usuario no encontrado.") : user;
+        return user is null ? ErrorDetail.NotFound("auth.user_not_found", "Usuario no encontrado.") : user;
     }
 
     private static UserSummary ToUserSummary(Entities.User u) => new(u.Id, u.Email, u.FullName, u.Role);
