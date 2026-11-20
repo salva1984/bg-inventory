@@ -43,7 +43,7 @@ export class ProductService {
     return this.http.delete(`${this.url}/${id}`);
   }
 
-  priceMatrix(filters: PriceMatrixFilters) {
+  getPriceMatrix(filters: PriceMatrixFilters) {
     let params = new HttpParams()
       .set('page', filters.page)
       .set('pageSize', pageSize);

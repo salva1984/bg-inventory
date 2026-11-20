@@ -24,11 +24,14 @@ public sealed record ErrorDetail(string Code, string Message, ErrorType Type)
 /// </summary>
 public class Result
 {
+    // Private constructor to enforce the use of static factory methods.
     protected Result(ErrorDetail? error) => Error = error;
 
     public ErrorDetail? Error { get; }
+    // Indicates whether the operation was successful (no error).
     public bool IsSuccess => Error is null;
 
+    // Static factory methods for creating Result instances.
     public static Result Success() => new(null);
     public static Result Failure(ErrorDetail error) => new(error);
 
@@ -38,7 +41,8 @@ public class Result
 public sealed class Result<T> : Result
 {
     private readonly T? _value;
-
+    // Private constructor to enforce the use of static factory methods.
+    // Creates a sucessful result with a value, or a failed result with an error.
     private Result(T value) : base(null) => _value = value;
     private Result(ErrorDetail error) : base(error) { }
 

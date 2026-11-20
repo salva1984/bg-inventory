@@ -44,7 +44,7 @@ export class PriceMatrix implements OnInit, OnDestroy {
   loading = signal(false);
   error = signal('');
 
-  // Petición en curso: se cancela al pedir otra para que una respuesta lenta no pise a la nueva.
+  // Petición en curso
   private request?: Subscription;
 
   ngOnInit() {
@@ -66,7 +66,8 @@ export class PriceMatrix implements OnInit, OnDestroy {
       search: this.search().trim(),
       supplierId: this.supplierFilter(),
     };
-    this.request = this.productService.priceMatrix(filters).subscribe({
+    
+    this.request = this.productService.getPriceMatrix(filters).subscribe({
       next: matrix => {
         this.matrix.set(matrix);
         this.loading.set(false);
@@ -89,7 +90,6 @@ export class PriceMatrix implements OnInit, OnDestroy {
     return hasComparison ? Math.min(...prices) : null;
   }
 
-  // Al cambiar un filtro se vuelve a la primera página.
   applyFilters() {
     this.page.set(1);
     this.load();
