@@ -14,23 +14,22 @@ td.lowest .detail {
 }
 
 .lowest-label {
-  display: block;
-  margin-bottom: 2px;
+  margin-right: 8px;
   font-size: 13px;
   font-weight: 500;
 }
 
 /*
- * Los nombres de proveedor son largos: se permite que el encabezado salte de línea
- * (así se lee completo) y se reserva un ancho mínimo para la columna de producto,
- * que de lo contrario se comprime. CSS no tiene elipsis "en medio" nativa.
+ * Altura fija: toda celda tiene dos líneas (precio con la etiqueta "Más barato" al lado, y el
+ * detalle), igual que la celda del producto; así todas las filas miden lo mismo y la tabla no
+ * salta al paginar.
+ * Los nombres de proveedor son largos, así que el encabezado puede saltar de línea; sus
+ * anchos los fija el <colgroup>.
  */
-th.num {
-  min-width: 150px;
-  white-space: normal;
+tbody tr {
+  height: 64px;
 }
 
-th:first-child,
-td:first-child {
-  min-width: 240px;
+th.num {
+  white-space: normal;
 }

@@ -40,6 +40,11 @@
       </p>
       <div class="table-wrap">
         <table>
+          <!-- Producto y proveedores con ancho fijo: la tabla se desplaza si hay muchos proveedores. -->
+          <colgroup>
+            <col class="col-product">
+            @for (supplier of matrix.suppliers; track supplier.id) { <col class="col-supplier"> }
+          </colgroup>
           <thead>
             <tr>
               <th>Producto</th>
@@ -50,7 +55,7 @@
             @for (item of matrix.products.items; track item.productId) {
               @let lowest = lowestPrice(item);
               <tr>
-                <td><strong>{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
+                <td><strong class="truncate" [title]="item.name">{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
                 @for (supplier of matrix.suppliers; track supplier.id) {
                   @let cell = item.cells[supplier.id];
                   <td class="num" [class.lowest]="cell?.price === lowest">

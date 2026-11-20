@@ -44,6 +44,15 @@
             [matSortActive]="sortBy()"
             [matSortDirection]="descending() ? 'desc' : 'asc'"
             (matSortChange)="changeSort($event)">
+          <!-- Anchos fijos: "Producto" ocupa el resto y las demás columnas no cambian de ancho entre páginas. -->
+          <colgroup>
+            <col>
+            <col class="col-count">
+            <col class="col-money">
+            <col class="col-money">
+            <col class="col-date">
+            <col class="col-actions">
+          </colgroup>
           <thead>
             <tr>
               <th mat-sort-header="Name">Producto</th>
@@ -58,7 +67,7 @@
           <tbody>
             @for (item of products.items; track item.id) {
               <tr>
-                <td><strong>{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
+                <td><strong class="truncate" [title]="item.name">{{ item.name }}</strong><span class="detail code">{{ item.code }}</span></td>
                 <td class="num">{{ item.supplierCount }}</td>
                 <td class="num">
                   @if (item.totalStock === 0) {
