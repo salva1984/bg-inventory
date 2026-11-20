@@ -69,6 +69,127 @@ namespace BgInventario.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BgInventario.Core.Entities.InvoiceReceipt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("FileContent")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("FileContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("InvoiceTotal")
+                        .HasPrecision(21, 2)
+                        .HasColumnType("decimal(21,2)");
+
+                    b.Property<DateOnly?>("IssueDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("RegisteredByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(21, 2)
+                        .HasColumnType("decimal(21,2)");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("RegisteredByUserId");
+
+                    b.HasIndex("SupplierId", "InvoiceNumber");
+
+                    b.ToTable("InvoiceReceipts");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.InvoiceReceiptLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("InvoiceReceiptId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("ProductCreated")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierItemCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceReceiptId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("InvoiceReceiptLines", (string)null);
+                });
+
             modelBuilder.Entity("BgInventario.Core.Entities.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -111,6 +232,23 @@ namespace BgInventario.Infrastructure.Persistence.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("BgInventario.Core.Entities.ProductTrigram", b =>
+                {
+                    b.Property<string>("Trigram")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Trigram", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductTrigrams");
+                });
+
             modelBuilder.Entity("BgInventario.Core.Entities.Supplier", b =>
                 {
                     b.Property<int>("Id")
@@ -148,6 +286,53 @@ namespace BgInventario.Infrastructure.Persistence.Migrations
                         .HasFilter("[DeletedAt] IS NULL");
 
                     b.ToTable("Suppliers");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.SupplierProductAlias", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("NormalizedDescription")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierItemCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SupplierId", "NormalizedDescription")
+                        .IsUnique();
+
+                    b.HasIndex("SupplierId", "SupplierItemCode");
+
+                    b.ToTable("SupplierProductAliases");
                 });
 
             modelBuilder.Entity("BgInventario.Core.Entities.User", b =>
@@ -211,9 +396,80 @@ namespace BgInventario.Infrastructure.Persistence.Migrations
                     b.Navigation("Supplier");
                 });
 
+            modelBuilder.Entity("BgInventario.Core.Entities.InvoiceReceipt", b =>
+                {
+                    b.HasOne("BgInventario.Core.Entities.User", "RegisteredBy")
+                        .WithMany()
+                        .HasForeignKey("RegisteredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BgInventario.Core.Entities.Supplier", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RegisteredBy");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.InvoiceReceiptLine", b =>
+                {
+                    b.HasOne("BgInventario.Core.Entities.InvoiceReceipt", "InvoiceReceipt")
+                        .WithMany("Lines")
+                        .HasForeignKey("InvoiceReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BgInventario.Core.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("InvoiceReceipt");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.ProductTrigram", b =>
+                {
+                    b.HasOne("BgInventario.Core.Entities.Product", "Product")
+                        .WithMany("Trigrams")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.SupplierProductAlias", b =>
+                {
+                    b.HasOne("BgInventario.Core.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BgInventario.Core.Entities.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("BgInventario.Core.Entities.InvoiceReceipt", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("BgInventario.Core.Entities.Product", b =>
                 {
                     b.Navigation("Lots");
+
+                    b.Navigation("Trigrams");
                 });
 
             modelBuilder.Entity("BgInventario.Core.Entities.Supplier", b =>

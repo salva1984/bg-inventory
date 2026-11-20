@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+.picker {
+  width: 100%;
+}
+/* Ámbar como el resto de avisos de "falta revisar". */
+.pending {
+  margin-top: 4px;
+  color: var(--warning);
+  font-size: 13px;
+}
+/* El botón se lee como un enlace dentro de la frase. */
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link:hover {
+  color: var(--primary-hover);
+}

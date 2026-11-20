@@ -18,6 +18,7 @@ import { ProductService } from '../../services/product.service';
 import { SupplierService } from '../../services/supplier.service';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { errorMessage } from '../../shared/utils/error-message';
+import { ProductDetail } from '../../interfaces/product';
 import { ProductForm, ProductFormData } from '../products/product-form/product-form';
 
 /** Matriz producto × proveedor con el precio mínimo y las existencias de cada cruce. */
@@ -122,7 +123,7 @@ export class PriceMatrix implements OnInit, OnDestroy {
 
   // Abre el mismo formulario que el listado; si se guardó algo, se recarga la matriz.
   openForm(productId: number) {
-    const dialogRef = this.dialog.open<ProductForm, ProductFormData, boolean>(ProductForm, {
+    const dialogRef = this.dialog.open<ProductForm, ProductFormData, ProductDetail>(ProductForm, {
       ...dialogSize,
       ariaLabelledBy: 'dialog-title',
       data: { id: productId },

@@ -9,6 +9,7 @@ namespace BgInventario.Core.Features.Products;
 /// Product use cases: listing, price matrix and CRUD. A product is saved together with its
 /// inventory lots (price and stock per supplier/lot) because the form edits them as one unit.
 /// Every successful write invalidates the dashboard summary, which is built from products and lots.
+/// Creating or editing also refreshes the product's search trigrams (<see cref="ProductSearchIndex"/>).
 /// </summary>
 public sealed class ProductService(IAppDbContext db, TimeProvider clock, DashboardCache dashboardCache)
 {
@@ -108,6 +109,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
         var product = new Product { Code = code, Name = request.Name.Trim(), Description = Clean(request.Description) };
         product.Lots.AddRange(lots.Select(ToEntity));
+        ProductSearchIndex.Refresh(product);
 
         db.Products.Add(product);
         await db.SaveChangesAsync(ct);
@@ -120,6 +122,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
     {
         var product = await db.Products
             .Include(p => p.Lots)
+            .Include(p => p.Trigrams)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
         if (product is null)
         {
@@ -145,6 +148,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
         product.Name = request.Name.Trim();
         product.Description = Clean(request.Description);
         SyncLots(product, lots);
+        ProductSearchIndex.Refresh(product); // the name or code may have changed
 
         // Editing only the inventory does not modify a column of the product, so the audit
         // interceptor would not stamp it; we mark it explicitly so "last updated" is truthful.
@@ -295,7 +299,8 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
     };
 
     // Codes and lot numbers are compared case-insensitively by storing them in upper case.
-    private static string NormalizeCode(string code) => code.Trim().ToUpperInvariant();
-    private static string NormalizeLot(string lot) => lot.Trim().ToUpperInvariant();
+    // Internal: the invoice confirmation looks up products and lots with the same rules.
+    internal static string NormalizeCode(string code) => code.Trim().ToUpperInvariant();
+    internal static string NormalizeLot(string lot) => lot.Trim().ToUpperInvariant();
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

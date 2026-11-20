@@ -1,0 +1,24 @@
+/* Detalle de una factura del historial: datos de cabecera en una fila y la tabla de líneas. */
+
+.receipt-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0 0 16px;
+}
+.receipt-summary dt {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.receipt-summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* El nombre del archivo ocupa el espacio libre a la izquierda del botón de descarga. */
+.file-name {
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

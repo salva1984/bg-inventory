@@ -17,3 +17,13 @@ export const maxPrice = 999_999_999;
 
 // Las existencias son un int de 32 bits en la API.
 export const maxStock = 2_147_483_647;
+
+// Largo máximo del nombre de un producto (ProductLimits.NameMaxLength en la API).
+export const productNameMaxLength = 150;
+
+// Tamaño máximo de una factura (InvoiceReceiptLimits.MaxFileBytes en la API).
+export const maxInvoiceFileMegabytes = 10;
+export const maxInvoiceFileBytes = maxInvoiceFileMegabytes * 1024 * 1024;
+
+// El número de factura se guarda como número de lote (InventoryLotLimits.LotNumberMaxLength).
+export const invoiceNumberMaxLength = 50;

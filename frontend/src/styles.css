@@ -241,6 +241,16 @@ td strong {
 .col-actions { width: 200px; }
 .col-product { width: 280px; }
 .col-supplier { width: 200px; }
+/*
+ * Campos dentro de una celda: ocupan la columna y sin el espacio inferior para mensajes,
+ * así la fila no crece. Es global porque ese espacio pertenece al template de mat-form-field.
+ */
+.cell-field {
+  width: 100%;
+}
+.cell-field .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
 /* Una sola línea con puntos suspensivos, para que todas las filas midan lo mismo. */
 .truncate {
   display: block;

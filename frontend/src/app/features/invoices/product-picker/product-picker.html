@@ -1,0 +1,31 @@
+<!-- Va dentro del formulario de revisión, pero su texto no es un campo a enviar (standalone):
+     lo que importa es el producto elegido, que el padre recibe por [(product)]. -->
+<mat-form-field class="picker">
+  <mat-label>Producto</mat-label>
+  <input
+      matInput
+      [matAutocomplete]="auto"
+      [ngModel]="text"
+      (ngModelChange)="onTextChange($event)"
+      [ngModelOptions]="{ standalone: true }"
+      [disabled]="disabled()"
+      placeholder="Busca por nombre o código">
+  <!-- displayWith muestra «código · nombre» cuando el valor del campo es un producto. -->
+  <mat-autocomplete #auto="matAutocomplete" [displayWith]="label" (optionSelected)="choose($event.option.value)">
+    @for (option of options(); track option.productId) {
+      <mat-option [value]="option">
+        <span class="code">{{ option.code }}</span> · {{ option.name }}
+        @if (option.score !== null) { <span class="detail">Coincidencia {{ option.score | percent }}</span> }
+      </mat-option>
+    } @empty {
+      <mat-option disabled>Sin resultados. Escribe al menos 2 letras del nombre o código.</mat-option>
+    }
+  </mat-autocomplete>
+</mat-form-field>
+<!-- Fuera del campo: un botón dentro de mat-hint quedaría apretado debajo del borde. -->
+@if (!product() && !disabled()) {
+  <p class="pending">
+    Elige un producto de la lista o
+    <button type="button" class="link" (click)="createProduct()">crea uno nuevo</button>.
+  </p>
+}

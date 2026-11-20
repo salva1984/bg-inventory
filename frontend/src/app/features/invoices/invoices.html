@@ -1,0 +1,262 @@
+<header class="page-heading">
+  <div>
+    <h1>Recepción de facturas</h1>
+    <p class="table-help">
+      Sube la factura del proveedor y revisa el producto de cada línea. El stock solo cambia al
+      registrar el ingreso, y cada confirmación enseña al sistema cómo nombra ese proveedor a sus productos.
+    </p>
+  </div>
+  @if (isAdmin) { <a mat-stroked-button routerLink="/invoice-history">Ver historial</a> }
+</header>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+@if (notice()) { <div class="message success" role="status">{{ notice() }}</div> }
+
+@if (!isAdmin) {
+  <p class="empty">Solo un administrador puede registrar el ingreso de mercadería.</p>
+} @else if (!analysis()) {
+  <!-- Paso 1: proveedor y archivo. -->
+  <section class="panel" aria-labelledby="upload-title" [attr.aria-busy]="analyzing()">
+    <h2 id="upload-title" class="panel-title">1. Factura</h2>
+    <form class="upload" (ngSubmit)="analyze()">
+      <mat-form-field>
+        <mat-label>Proveedor</mat-label>
+        <mat-select name="supplier" [(ngModel)]="supplierId" [disabled]="analyzing()" required>
+          @for (supplier of suppliers(); track supplier.id) {
+            <mat-option [value]="supplier.id">{{ supplier.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- El input nativo queda oculto; el botón lo abre y al lado se muestra el archivo elegido. -->
+      <div class="file-field">
+        <input #fileInput type="file" class="sr-only" [accept]="acceptedFiles" (change)="onFileSelected($event)">
+        <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="analyzing()">
+          Elegir archivo
+        </button>
+        <span class="file-name">{{ file()?.name ?? 'PDF o imagen (PNG, JPEG, WebP), hasta 10 MB' }}</span>
+      </div>
+
+      <button mat-flat-button type="submit" [disabled]="!canAnalyze">Analizar factura</button>
+    </form>
+
+    <div class="loading-slot">
+      <mat-progress-bar mode="indeterminate" aria-label="Analizando"
+          [class.is-loading]="analyzing()" [attr.aria-hidden]="!analyzing()"></mat-progress-bar>
+    </div>
+    @if (analyzing()) {
+      <p class="detail" role="status">Leyendo la factura… puede tardar hasta un minuto.</p>
+    }
+  </section>
+} @else if (analysis(); as analysis) {
+  <!-- Paso 2: revisión. Nada está guardado hasta registrar el ingreso. -->
+  <form #reviewForm="ngForm" (ngSubmit)="confirm()">
+    <!-- El emisor de la factura no es el proveedor elegido: la API no cambia la elección, la pregunta. -->
+    @if (analysis.issuerCheck === 'OtherSupplier' || analysis.issuerCheck === 'NotRegistered') {
+      @if (!issuerDecided()) {
+        <section class="issuer-alert" role="alert" aria-labelledby="issuer-title">
+          <h2 id="issuer-title">¿De qué proveedor es esta factura?</h2>
+          <p>
+            Elegiste <strong>{{ chosenSupplierName }}</strong>, pero la factura la emite
+            <strong>{{ analysis.supplierName }}</strong>.
+            @if (analysis.suggestedSupplier; as suggested) {
+              Ese emisor corresponde a tu proveedor <strong>{{ suggested.name }}</strong>.
+            } @else {
+              Ese emisor no coincide con ningún proveedor registrado.
+            }
+            El stock y lo que el sistema aprenda de esta factura quedarán en el proveedor que confirmes.
+          </p>
+          <div class="issuer-actions">
+            @if (analysis.suggestedSupplier; as suggested) {
+              <button mat-flat-button type="button" (click)="analyzeAs(suggested.id)">
+                Analizar como {{ suggested.name }}
+              </button>
+            } @else {
+              <span class="form-hint">Si es un proveedor nuevo, créalo en Proveedores y vuelve a analizar.</span>
+            }
+            <button mat-stroked-button type="button" (click)="keepChosenSupplier()">
+              Mantener {{ chosenSupplierName }}
+            </button>
+          </div>
+        </section>
+      } @else {
+        <p class="message issuer-note" role="status">
+          Se registrará en <strong>{{ chosenSupplierName }}</strong> aunque la factura la emite
+          <strong>{{ analysis.supplierName }}</strong>.
+        </p>
+      }
+    }
+
+    <section class="panel" aria-labelledby="invoice-title">
+      <h2 id="invoice-title" class="panel-title">2. Revisión</h2>
+      <div class="invoice-summary">
+        <mat-form-field>
+          <mat-label>Número de factura</mat-label>
+          <input
+              matInput
+              name="invoiceNumber"
+              [(ngModel)]="invoiceNumber"
+              required
+              [pattern]="notBlankPattern"
+              [maxlength]="invoiceNumberMaxLength">
+          <mat-hint>Se usa como número de lote del stock recibido.</mat-hint>
+          <mat-error>Ingresa el número de factura.</mat-error>
+        </mat-form-field>
+        <dl>
+          <div><dt>Proveedor</dt><dd>{{ chosenSupplierName }}</dd></div>
+          <div><dt>Emisor en la factura</dt><dd>{{ analysis.supplierName || '—' }}</dd></div>
+          <div><dt>Fecha</dt><dd>{{ analysis.issueDate ? (analysis.issueDate | date:'dd/MM/yyyy') : '—' }}</dd></div>
+          <div><dt>Subtotal</dt><dd class="num">{{ analysis.subtotal !== null ? (analysis.subtotal | currency:'USD') : '—' }}</dd></div>
+          <div><dt>Total</dt><dd class="num">{{ analysis.total !== null ? (analysis.total | currency:'USD') : '—' }}</dd></div>
+        </dl>
+      </div>
+
+      @if (analysis.warnings.length > 0) {
+        <ul class="warnings" aria-label="Advertencias de la lectura">
+          @for (warning of analysis.warnings; track $index) { <li>{{ warning }}</li> }
+        </ul>
+      }
+    </section>
+
+    <!-- La factura tal como se subió, para contrastar lo leído. Se muestra desde el navegador, sin volver a pedirla. -->
+    @if (fileUrl(); as fileUrl) {
+      <section class="panel original" aria-labelledby="original-title">
+        <div class="original-heading">
+          <h2 id="original-title" class="panel-title">Factura original</h2>
+          <span class="detail file-name">{{ file()?.name }}</span>
+          <button
+              mat-stroked-button
+              type="button"
+              [attr.aria-expanded]="showOriginal()"
+              aria-controls="original-viewer"
+              (click)="showOriginal.set(!showOriginal())">
+            {{ showOriginal() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+          <!-- En otra pestaña se puede poner al lado de la revisión y usar el zoom del visor. -->
+          <a mat-button [href]="fileUrl" target="_blank" rel="noopener">Abrir en otra pestaña</a>
+        </div>
+        @if (showOriginal()) {
+          <div id="original-viewer" class="original-viewer">
+            @if (pdfUrl(); as pdfUrl) {
+              <iframe [src]="pdfUrl" title="Factura original"></iframe>
+            } @else {
+              <img [src]="fileUrl" alt="Factura original">
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <div class="table-wrap">
+      <table class="review">
+        <colgroup>
+          <col class="col-include">
+          <col>
+          <col class="col-status">
+          <col class="col-picker">
+          <col class="col-quantity">
+          <col class="col-money">
+          <col class="col-money">
+        </colgroup>
+        <thead>
+          <tr>
+            <th><span class="sr-only">Registrar</span></th>
+            <th>En la factura</th>
+            <th>Estado</th>
+            <th>Producto</th>
+            <th class="num">Cantidad</th>
+            <th class="num">Precio unit.</th>
+            <th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track line.lineNumber) {
+            <tr [class.excluded]="!line.include">
+              <td>
+                <mat-checkbox
+                    [name]="'include' + line.lineNumber"
+                    [(ngModel)]="line.include"
+                    [aria-label]="'Registrar la línea ' + line.lineNumber" />
+              </td>
+              <td>
+                <strong>{{ line.description }}</strong>
+                <span class="detail">
+                  Línea {{ line.lineNumber }}
+                  @if (line.supplierItemCode) { · Código <span class="code">{{ line.supplierItemCode }}</span> }
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="statusBadges[line.status].style">{{ statusBadges[line.status].label }}</span>
+                @if (line.matchedBy) { <span class="detail">{{ matchedByLabels[line.matchedBy] }}</span> }
+              </td>
+              <td>
+                <app-product-picker
+                    [candidates]="line.candidates"
+                    [newProductName]="line.description"
+                    [(product)]="line.product"
+                    [disabled]="!line.include || confirming()" />
+              </td>
+              <td>
+                <mat-form-field class="cell-field">
+                  <input
+                      matInput
+                      class="num"
+                      aria-label="Cantidad"
+                      [name]="'quantity' + line.lineNumber"
+                      [(ngModel)]="line.quantity"
+                      type="number"
+                      min="1"
+                      [max]="maxStock"
+                      step="1"
+                      [pattern]="wholeNumberPattern"
+                      [disabled]="!line.include"
+                      required>
+                </mat-form-field>
+              </td>
+              <td>
+                <mat-form-field class="cell-field">
+                  <input
+                      matInput
+                      class="num"
+                      aria-label="Precio unitario"
+                      [name]="'price' + line.lineNumber"
+                      [(ngModel)]="line.unitPrice"
+                      type="number"
+                      [min]="minPrice"
+                      [max]="maxPrice"
+                      step="0.01"
+                      [pattern]="pricePattern"
+                      [disabled]="!line.include"
+                      required>
+                </mat-form-field>
+              </td>
+              <td class="num">{{ lineTotal(line) | currency:'USD' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-actions">
+      <!-- El botón queda deshabilitado mientras falte algo; este aviso explica qué. -->
+      @if (!issuerDecided()) {
+        <span class="form-hint">Decide arriba a qué proveedor corresponde la factura.</span>
+      } @else if (includedLines.length === 0) {
+        <span class="form-hint">Marca al menos una línea para registrar.</span>
+      } @else if (unresolvedCount > 0) {
+        <span class="form-hint">Falta elegir el producto de {{ unresolvedCount }} {{ unresolvedCount === 1 ? 'línea' : 'líneas' }}.</span>
+      } @else if (reviewForm.invalid) {
+        <span class="form-hint">Revisa el número de factura y las cantidades (enteras) y precios (hasta 2 decimales).</span>
+      } @else {
+        <span class="form-hint">Total a registrar: <strong>{{ invoiceTotal | currency:'USD' }}</strong></span>
+      }
+      <button mat-button type="button" (click)="startOver()" [disabled]="confirming()">Cancelar</button>
+      <button
+          mat-flat-button
+          type="submit"
+          [disabled]="confirming() || !issuerDecided() || reviewForm.invalid || includedLines.length === 0 || unresolvedCount > 0">
+        Registrar ingreso
+      </button>
+    </div>
+  </form>
+}

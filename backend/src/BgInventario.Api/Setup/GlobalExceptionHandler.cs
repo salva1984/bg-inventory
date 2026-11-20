@@ -15,6 +15,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     {
         var (status, title) = exception switch
         {
+            // Kestrel stops reading a body larger than the endpoint's limit (e.g. an invoice file).
+            BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } =>
+                (StatusCodes.Status413PayloadTooLarge, "El archivo supera el tamaño máximo permitido."),
             BadHttpRequestException => (StatusCodes.Status400BadRequest, "La solicitud no tiene un formato válido."),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "El registro fue modificado por otro usuario. Recargue e intente de nuevo."),
             DbUpdateException => (StatusCodes.Status409Conflict, "No se pudo guardar: el dato entra en conflicto con información existente."),

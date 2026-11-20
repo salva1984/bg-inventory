@@ -14,6 +14,7 @@
 #   - DB_CONNECTION_STRING: connection string de Azure SQL, con la contraseña.
 #   - JWT_KEY: clave para firmar los tokens (32+ caracteres).
 #   - SEED_ADMIN_PASSWORD / SEED_VIEWER_PASSWORD: contraseñas de los usuarios iniciales.
+#   - OPENROUTER_API_KEY: clave de OpenRouter para el análisis de facturas (modelo y endpoint en appsettings.json).
 # La configuración que no es secreta vive en el paso "Actualizar la Container App", versionada aquí.
 
 name: Build and deploy API to Azure Container Apps - bg-backend
@@ -88,6 +89,7 @@ jobs:
           JWT_KEY: ${{ secrets.JWT_KEY }}
           SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
           SEED_VIEWER_PASSWORD: ${{ secrets.SEED_VIEWER_PASSWORD }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: >
           az containerapp secret set
           --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP"
@@ -96,6 +98,7 @@ jobs:
           jwt-key="$JWT_KEY"
           seed-admin-password="$SEED_ADMIN_PASSWORD"
           seed-viewer-password="$SEED_VIEWER_PASSWORD"
+          openrouter-api-key="$OPENROUTER_API_KEY"
 
       # Imagen nueva y configuración de la API. Las variables secretas apuntan a los secretos de arriba
       # (secretref); las demás son valores fijos. Una sola réplica: la migración al arrancar y el caché
@@ -111,6 +114,7 @@ jobs:
           Jwt__Key=secretref:jwt-key
           Seed__AdminPassword=secretref:seed-admin-password
           Seed__ViewerPassword=secretref:seed-viewer-password
+          InvoiceExtraction__ApiKey=secretref:openrouter-api-key
           Database__MigrateOnStartup=true
           Seed__SampleData=true
           Seed__SampleProductCount=200

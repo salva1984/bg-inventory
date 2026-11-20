@@ -1,5 +1,7 @@
 // Composition root of the API: wires the layers and defines the HTTP pipeline.
-// The order of the middlewares matters: errors → logging → CORS → rate limit → auth → endpoints.
+// The order of the middlewares matters: errors → logging → CORS → auth → rate limit → endpoints.
+// The rate limiter goes after auth so its per-user partitions see the signed-in user, and a
+// request without a valid token is rejected (401) before it spends anyone's quota.
 using BgInventario.Api.Endpoints;
 using BgInventario.Api.Setup;
 using BgInventario.Core;
@@ -50,9 +52,9 @@ try
     }
 
     app.UseCors(ServiceCollectionExtensions.CorsPolicy);
-    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapHealthChecks("/health").AllowAnonymous();
     app.MapAuthEndpoints();
@@ -60,6 +62,7 @@ try
     app.MapSupplierEndpoints();
     app.MapDashboardEndpoints();
     app.MapClientLogEndpoints();
+    app.MapInvoiceEndpoints();
 
     if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     {

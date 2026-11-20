@@ -12,6 +12,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<InventoryLot> InventoryLots => Set<InventoryLot>();
+    public DbSet<ProductTrigram> ProductTrigrams => Set<ProductTrigram>();
+    public DbSet<SupplierProductAlias> SupplierProductAliases => Set<SupplierProductAlias>();
+    public DbSet<InvoiceReceipt> InvoiceReceipts => Set<InvoiceReceipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

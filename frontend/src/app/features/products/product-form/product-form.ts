@@ -13,7 +13,7 @@ import {
   pricePattern,
   wholeNumberPattern,
 } from '../../../core/constants/validation';
-import { Lot, ProductInput } from '../../../interfaces/product';
+import { Lot, ProductDetail, ProductInput } from '../../../interfaces/product';
 import { SupplierOption } from '../../../interfaces/supplier';
 import { AuthService } from '../../../services/auth.service';
 import { ProductService } from '../../../services/product.service';
@@ -23,12 +23,16 @@ import { errorMessage } from '../../../shared/utils/error-message';
 // Datos que recibe el diálogo: sin `id` se crea un producto nuevo.
 export interface ProductFormData {
   id?: number;
+  // Nombre con el que empieza un producto nuevo (por ejemplo, la descripción de una línea de factura).
+  initialName?: string;
+  // Al crear desde una factura no se piden lotes: el stock lo registra la confirmación de la factura.
+  withoutLots?: boolean;
 }
 
 /**
  * Diálogo para crear, editar o consultar un producto con sus lotes.
  * Un usuario sin rol de administrador lo ve en solo lectura.
- * Se cierra con `true` cuando guardó cambios.
+ * Se cierra con el producto guardado, o sin valor si se canceló.
  */
 @Component({
   selector: 'app-product-form',
@@ -39,14 +43,16 @@ export interface ProductFormData {
 export class ProductForm implements OnInit {
   private productService = inject(ProductService);
   private supplierService = inject(SupplierService);
-  private dialogRef = inject<MatDialogRef<ProductForm, boolean>>(MatDialogRef);
-  private id = inject<ProductFormData>(MAT_DIALOG_DATA).id;
+  private dialogRef = inject<MatDialogRef<ProductForm, ProductDetail>>(MatDialogRef);
+  private data = inject<ProductFormData>(MAT_DIALOG_DATA);
+  private id = this.data.id;
 
   isAdmin = inject(AuthService).isAdmin;
   isEditing = this.id !== undefined;
   suppliers = signal<SupplierOption[]>([]);
   code = signal('');
-  name = signal('');
+  name = signal(this.data.initialName ?? '');
+  withoutLots = this.data.withoutLots ?? false;
   description = signal('');
   // Los campos de cada lote se editan directamente sobre el objeto con ngModel;
   // el signal cambia solo cuando se agrega, quita o carga la lista completa.
@@ -120,13 +126,13 @@ export class ProductForm implements OnInit {
       : this.productService.update(this.id, input);
 
     request.subscribe({
-      next: () => this.dialogRef.close(true),
+      next: saved => this.dialogRef.close(saved),
       error: error => this.fail(error),
     });
   }
 
   close() {
-    this.dialogRef.close(false);
+    this.dialogRef.close();
   }
 
   // Limpia el formulario para enviarlo: descripción vacía como null y números como números.

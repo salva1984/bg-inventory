@@ -44,3 +44,11 @@ fieldset {
     grid-template-columns: 1fr;
   }
 }
+
+/* Producto creado desde una factura: el aviso ocupa el lugar de los lotes. */
+.without-lots {
+  display: block;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}

@@ -9,6 +9,9 @@ public interface IAppDbContext
     DbSet<Product> Products { get; }
     DbSet<Supplier> Suppliers { get; }
     DbSet<InventoryLot> InventoryLots { get; }
+    DbSet<ProductTrigram> ProductTrigrams { get; }
+    DbSet<SupplierProductAlias> SupplierProductAliases { get; }
+    DbSet<InvoiceReceipt> InvoiceReceipts { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

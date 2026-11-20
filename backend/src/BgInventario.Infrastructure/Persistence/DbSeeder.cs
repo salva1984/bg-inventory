@@ -1,5 +1,6 @@
 using BgInventario.Core.Entities;
 using BgInventario.Core.Features.Auth;
+using BgInventario.Core.Features.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Infrastructure.Persistence;
@@ -23,6 +24,8 @@ public sealed class SeedOptions
 /// Creates the users the login validates against (the challenge asks for users already in the database)
 /// and, optionally, the sample data of the challenge plus generated volume (<see cref="SampleDataGenerator"/>). Runs through EF Core's UseSeeding/UseAsyncSeeding
 /// after migrations; it is idempotent because it only inserts into empty tables.
+/// It also builds the search trigrams of products that have none (sample data, or products created
+/// before the invoice matching existed).
 /// </summary>
 internal static class DbSeeder
 {
@@ -86,6 +89,27 @@ internal static class DbSeeder
 
             await db.SaveChangesAsync(ct);
         }
+
+        await IndexProductsWithoutTrigramsAsync(db, ct);
+    }
+
+    /// <summary>
+    /// ProductService keeps the trigrams in sync on every create and edit; this covers rows that
+    /// did not go through it. Once everything is indexed it is a single query that finds nothing.
+    /// </summary>
+    private static async Task IndexProductsWithoutTrigramsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var unindexed = await db.Products
+            .Include(p => p.Trigrams)
+            .Where(p => !p.Trigrams.Any())
+            .ToListAsync(ct);
+        if (unindexed.Count == 0)
+        {
+            return;
+        }
+
+        unindexed.ForEach(ProductSearchIndex.Refresh);
+        await db.SaveChangesAsync(ct);
     }
 
     private static Product Product(

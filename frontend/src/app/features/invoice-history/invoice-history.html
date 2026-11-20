@@ -1,0 +1,79 @@
+<header class="page-heading">
+  <div>
+    <h1>Historial de facturas</h1>
+    <p class="table-help">
+      Cada factura confirmada, con lo que se registró en cada línea y el archivo original.
+    </p>
+  </div>
+  @if (isAdmin) { <a mat-flat-button routerLink="/invoices">Registrar factura</a> }
+</header>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+@if (!isAdmin) {
+  <p class="empty">Solo un administrador puede ver el historial de facturas.</p>
+} @else {
+  <section aria-label="Resultados" [attr.aria-busy]="loading()">
+    <div class="filters">
+      <form class="search" (ngSubmit)="applyFilters()">
+        <mat-form-field>
+          <mat-label>Buscar</mat-label>
+          <input matInput name="search" [(ngModel)]="search" placeholder="Número de factura o proveedor">
+        </mat-form-field>
+        <button mat-stroked-button type="submit">Buscar</button>
+      </form>
+    </div>
+
+    <!-- Espacio fijo para la barra: al aparecer no desplaza la tabla. -->
+    <div class="loading-slot">
+      <mat-progress-bar mode="indeterminate" aria-label="Cargando"
+          [class.is-loading]="loading()" [attr.aria-hidden]="!loading()"></mat-progress-bar>
+    </div>
+
+    @if (receipts(); as receipts) {
+      @if (receipts.totalCount === 0) {
+        <p class="empty">No hay facturas registradas. Prueba otra búsqueda o registra una factura.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-date">Registrada</th>
+                <th>Factura</th>
+                <th class="col-supplier">Proveedor</th>
+                <th class="col-date">Emisión</th>
+                <th>Registrada por</th>
+                <th class="num col-count">Líneas</th>
+                <th class="num col-money">Subtotal</th>
+                <th class="num col-money">Total con impuestos</th>
+                <th><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of receipts.items; track item.id) {
+                <tr>
+                  <td>{{ item.registeredAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td><strong>{{ item.invoiceNumber }}</strong></td>
+                  <td>{{ item.supplierName }}</td>
+                  <td>{{ item.issueDate ? (item.issueDate | date:'dd/MM/yyyy') : '—' }}</td>
+                  <td>{{ item.registeredBy }}</td>
+                  <td class="num">{{ item.lineCount }}</td>
+                  <td class="num">{{ item.subtotal | currency:'USD' }}</td>
+                  <td class="num">{{ item.invoiceTotal !== null ? (item.invoiceTotal | currency:'USD') : '—' }}</td>
+                  <td class="actions">
+                    <button mat-button (click)="openDetail(item)">Ver detalle</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination
+            [page]="page()"
+            [totalPages]="receipts.totalPages"
+            [totalCount]="receipts.totalCount"
+            (pageChange)="goToPage($event)" />
+      }
+    }
+  </section>
+}

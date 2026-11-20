@@ -30,13 +30,14 @@ export class ProductService {
     return this.http.get<ProductDetail>(`${this.url}/${id}`);
   }
 
+  // Crear y editar devuelven el producto guardado, con su id y sus lotes.
   create(product: ProductInput) {
-    return this.http.post(this.url, product);
+    return this.http.post<ProductDetail>(this.url, product);
   }
 
   // La API reemplaza la colección de lotes, por eso cada lote existente debe llevar su id.
   update(id: number, product: ProductInput) {
-    return this.http.put(`${this.url}/${id}`, product);
+    return this.http.put<ProductDetail>(`${this.url}/${id}`, product);
   }
 
   delete(id: number) {

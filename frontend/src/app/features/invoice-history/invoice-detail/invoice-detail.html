@@ -1,0 +1,60 @@
+<section class="dialog">
+  <div class="dialog-heading">
+    <h2 id="dialog-title">Factura {{ receipt()?.invoiceNumber }}</h2>
+    <button mat-button aria-label="Cerrar" (click)="close()">Cerrar</button>
+  </div>
+  @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+  @if (receipt(); as receipt) {
+    <dl class="receipt-summary">
+      <div><dt>Proveedor</dt><dd>{{ receipt.supplierName }}</dd></div>
+      <div><dt>Emisión</dt><dd>{{ receipt.issueDate ? (receipt.issueDate | date:'dd/MM/yyyy') : '—' }}</dd></div>
+      <div><dt>Registrada</dt><dd>{{ receipt.registeredAt | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+      <div><dt>Por</dt><dd>{{ receipt.registeredBy }}</dd></div>
+      <div><dt>Subtotal</dt><dd class="num">{{ receipt.subtotal | currency:'USD' }}</dd></div>
+      <div><dt>Total con impuestos</dt><dd class="num">{{ receipt.invoiceTotal !== null ? (receipt.invoiceTotal | currency:'USD') : '—' }}</dd></div>
+    </dl>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">#</th>
+            <th>En la factura</th>
+            <th>Producto asociado</th>
+            <th class="num">Cantidad</th>
+            <th class="num">Precio</th>
+            <th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of receipt.lines; track line.lineNumber) {
+            <tr>
+              <td class="num">{{ line.lineNumber }}</td>
+              <td>
+                {{ line.description }}
+                @if (line.supplierItemCode) { <span class="detail">Código {{ line.supplierItemCode }}</span> }
+              </td>
+              <td>
+                <span class="code">{{ line.productCode }}</span> {{ line.productName }}
+                @if (line.productCreated) { <span class="badge badge-primary">Creado</span> }
+              </td>
+              <td class="num">{{ line.quantity }}</td>
+              <td class="num">{{ line.unitPrice | currency:'USD' }}</td>
+              <td class="num">{{ lineTotal(line) | currency:'USD' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="dialog-actions">
+      <span class="detail file-name">{{ receipt.fileName }}</span>
+      <button mat-stroked-button type="button" (click)="download()" [disabled]="downloading()">
+        Descargar archivo
+      </button>
+    </div>
+  } @else if (!error()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Cargando"></mat-progress-bar>
+  }
+</section>

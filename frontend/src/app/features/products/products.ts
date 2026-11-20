@@ -11,7 +11,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { Subscription } from 'rxjs';
 import { dialogSize } from '../../core/constants/ui';
 import { Page } from '../../interfaces/pagination';
-import { Product } from '../../interfaces/product';
+import { Product, ProductDetail } from '../../interfaces/product';
 import { SupplierOption } from '../../interfaces/supplier';
 import { AuthService } from '../../services/auth.service';
 import { ProductService } from '../../services/product.service';
@@ -116,9 +116,9 @@ export class Products implements OnInit, OnDestroy {
     this.load();
   }
 
-  // El formulario guarda por su cuenta y devuelve `true` al cerrarse si hubo cambios.
+  // El formulario guarda por su cuenta y, si hubo cambios, devuelve el producto guardado al cerrarse.
   openForm(id?: number) {
-    const dialogRef = this.dialog.open<ProductForm, ProductFormData, boolean>(ProductForm, {
+    const dialogRef = this.dialog.open<ProductForm, ProductFormData, ProductDetail>(ProductForm, {
       ...dialogSize,
       ariaLabelledBy: 'dialog-title',
       data: { id },

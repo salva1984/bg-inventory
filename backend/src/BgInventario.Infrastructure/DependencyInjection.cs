@@ -1,12 +1,20 @@
-// Registers persistence (SQL Server + EF Core) and security (JWT, password hashing) services.
+// Registers persistence (SQL Server + EF Core), security (JWT, password hashing) and the invoice
+// extraction (LLM through an OpenAI-compatible endpoint).
+using System.ClientModel;
 using BgInventario.Core.Common;
 using BgInventario.Core.Features.Auth;
+using BgInventario.Core.Features.Invoices;
+using BgInventario.Infrastructure.Invoices;
 using BgInventario.Infrastructure.Persistence;
 using BgInventario.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI;
+using OpenAI.Chat;
 
 namespace BgInventario.Infrastructure;
 
@@ -38,7 +46,41 @@ public static class DependencyInjection
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
+        services.AddInvoiceExtraction(configuration);
+
         return services;
+    }
+
+    /// <summary>
+    /// Without an API key the app still starts (local runs, tests) and only the invoice analysis
+    /// answers 503; the rest of the inventory does not depend on the model.
+    /// </summary>
+    private static void AddInvoiceExtraction(this IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(InvoiceExtractionOptions.SectionName).Get<InvoiceExtractionOptions>()
+            ?? new InvoiceExtractionOptions();
+
+        if (!options.IsConfigured)
+        {
+            services.AddSingleton<IInvoiceExtractor, UnconfiguredInvoiceExtractor>();
+            return;
+        }
+
+        // OpenRouter (and any OpenAI-compatible provider) only needs the base URL and the key.
+        var clientOptions = new OpenAIClientOptions
+        {
+            Endpoint = new Uri(options.Endpoint),
+            NetworkTimeout = options.Timeout
+        };
+        var chatClient = new ChatClient(options.Model, new ApiKeyCredential(options.ApiKey!), clientOptions)
+            .AsIChatClient()
+            .AsBuilder()
+            // Each call appears as a span (model, tokens, duration) in the same traces as the request.
+            .UseOpenTelemetry(sourceName: InvoiceExtractionTelemetry.SourceName)
+            .Build();
+
+        services.AddSingleton<IInvoiceExtractor>(sp => new LlmInvoiceExtractor(
+            chatClient, options, sp.GetRequiredService<ILogger<LlmInvoiceExtractor>>()));
     }
 
     private static Task Seed(DbContext context, IServiceProvider sp, CancellationToken ct) =>

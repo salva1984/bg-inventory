@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using BgInventario.Core.Entities;
+using BgInventario.Infrastructure.Invoices;
 using BgInventario.Infrastructure.Persistence;
 using BgInventario.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -23,13 +24,18 @@ public static class ServiceCollectionExtensions
     public const string CorsPolicy = "Frontend";
     public const string AdminPolicy = "Admin";
     public const string LoginRateLimit = "login";
+    public const string InvoiceAnalysisRateLimit = "invoice-analysis";
 
     // Name under which logs, traces and metrics appear in the dashboard (OTLP "service.name").
     public const string ServiceName = "BgInventario.Api";
 
     // Brute-force protection: login attempts allowed per client IP in each window.
-    private const int LoginAttemptsPerWindow = 5;
+    public const int LoginAttemptsPerWindow = 5;
     private static readonly TimeSpan LoginWindow = TimeSpan.FromMinutes(1);
+
+    // Cost protection: invoice analyses (paid LLM calls) allowed per user in each window.
+    public const int InvoiceAnalysesPerWindow = 10;
+    private static readonly TimeSpan InvoiceAnalysisWindow = TimeSpan.FromMinutes(1);
 
     // How long the browser may cache a CORS preflight answer before asking again.
     private static readonly TimeSpan PreflightCacheDuration = TimeSpan.FromMinutes(10);
@@ -49,7 +55,7 @@ public static class ServiceCollectionExtensions
 
         services.AddCors(configuration);
         services.AddJwtAuthentication(configuration);
-        services.AddLoginRateLimit();
+        services.AddRateLimits();
         services.AddSwagger();
 
         // In-memory cache behind HybridCache (used by the dashboard). Registering a distributed
@@ -112,7 +118,7 @@ public static class ServiceCollectionExtensions
             .AddPolicy(AdminPolicy, p => p.RequireRole(nameof(UserRole.Admin)));
     }
 
-    private static void AddLoginRateLimit(this IServiceCollection services) =>
+    private static void AddRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -121,6 +127,16 @@ public static class ServiceCollectionExtensions
                 httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _loginWindow => new FixedWindowRateLimiterOptions { 
                     PermitLimit = LoginAttemptsPerWindow, Window = LoginWindow }));
+
+            // One counter per signed-in user, so a loop in one client cannot run up the model bill
+            // nor block the other admins. Needs UseRateLimiter after UseAuthentication (Program.cs);
+            // before it every request would share the "anonymous" counter.
+            options.AddPolicy(InvoiceAnalysisRateLimit, httpContext => RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.User.Identity?.Name ?? "anonymous",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = InvoiceAnalysesPerWindow, Window = InvoiceAnalysisWindow
+                }));
         });
 
     // Traces (each request with its SQL queries) and metrics, exported over OTLP. The destination
@@ -132,6 +148,7 @@ public static class ServiceCollectionExtensions
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation()
                 .AddSqlClientInstrumentation()
+                .AddSource(InvoiceExtractionTelemetry.SourceName) // LLM calls of the invoice analysis
                 .AddOtlpExporter())
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()

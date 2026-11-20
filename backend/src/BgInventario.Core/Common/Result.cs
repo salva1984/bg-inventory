@@ -6,7 +6,10 @@ public enum ErrorType
     Validation,
     NotFound,
     Conflict,
-    Unauthorized
+    Unauthorized,
+
+    /// <summary>A service the operation depends on is missing or down (e.g. the invoice AI model).</summary>
+    Unavailable
 }
 
 /// <summary>Business error. The API maps <see cref="Type"/> to an HTTP status (ProblemDetails).</summary>
@@ -16,6 +19,7 @@ public sealed record ErrorDetail(string Code, string Message, ErrorType Type)
     public static ErrorDetail NotFound(string code, string message) => new(code, message, ErrorType.NotFound);
     public static ErrorDetail Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
     public static ErrorDetail Unauthorized(string code, string message) => new(code, message, ErrorType.Unauthorized);
+    public static ErrorDetail Unavailable(string code, string message) => new(code, message, ErrorType.Unavailable);
 }
 
 /// <summary>

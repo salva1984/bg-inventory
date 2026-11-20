@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.15" />
     <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.11.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\BgInventario.Core\BgInventario.Core.csproj" />
     <ProjectReference Include="..\..\src\BgInventario.Infrastructure\BgInventario.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BgInventario.Api\BgInventario.Api.csproj" />
   </ItemGroup>
 
 </Project>

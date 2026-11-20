@@ -1,18 +1,21 @@
 /* Barra lateral fija con marca, navegación y cuenta; el contenido a su derecha. */
 :host {
+  --sidebar-width: 248px;
   display: flex;
   min-height: 100vh;
 }
 
 /* ---------- Barra lateral ---------- */
+/* Es fixed (no sticky) para que no se mueva cuando el CDK bloquea el scroll al abrir un diálogo. */
 .sidebar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   display: flex;
   flex: none;
   flex-direction: column;
   gap: 24px;
-  width: 248px;
+  width: var(--sidebar-width);
   height: 100vh;
   padding: 20px 16px;
   background: var(--background);
@@ -41,6 +44,8 @@
   flex: 1;
   min-width: 0;
   max-width: 1280px;
+  /* La barra lateral fija no ocupa espacio en el flujo, así que se reserva su ancho. */
+  margin-left: var(--sidebar-width);
   padding: 32px 32px 56px;
 }
 
@@ -76,6 +81,7 @@
   }
 
   .content {
+    margin-left: 0;
     padding: 24px 16px 40px;
   }
 }

@@ -30,6 +30,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/price-matrix/price-matrix').then(m => m.PriceMatrix),
       },
       {
+        path: 'invoices',
+        title: 'Recepción de facturas',
+        loadComponent: () => import('./features/invoices/invoices').then(m => m.Invoices),
+      },
+      {
+        path: 'invoice-history',
+        title: 'Historial de facturas',
+        loadComponent: () => import('./features/invoice-history/invoice-history').then(m => m.InvoiceHistory),
+      },
+      {
         path: 'suppliers',
         title: 'Proveedores',
         loadComponent: () => import('./features/suppliers/suppliers').then(m => m.Suppliers),

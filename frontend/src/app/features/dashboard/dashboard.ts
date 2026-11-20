@@ -9,6 +9,7 @@ import { DashboardSummary } from '../../interfaces/dashboard';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { errorMessage } from '../../shared/utils/error-message';
+import { ProductDetail } from '../../interfaces/product';
 import { ProductForm, ProductFormData } from '../products/product-form/product-form';
 
 /**
@@ -65,7 +66,7 @@ export class Dashboard implements OnInit {
 
   // Abre el formulario del producto, que incluye sus lotes; si se guardó algo, se recalcula el resumen.
   openForm(productId: number) {
-    const dialogRef = this.dialog.open<ProductForm, ProductFormData, boolean>(ProductForm, {
+    const dialogRef = this.dialog.open<ProductForm, ProductFormData, ProductDetail>(ProductForm, {
       ...dialogSize,
       ariaLabelledBy: 'dialog-title',
       data: { id: productId },

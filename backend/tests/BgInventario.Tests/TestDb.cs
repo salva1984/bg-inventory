@@ -15,6 +15,8 @@ public sealed class TestDb : IDisposable
 
     public TestDb()
     {
+        // The model uses SQL Server's binary collation on keys computed in C#; here it compares the same way.
+        _connection.CreateCollation(Collations.Ordinal, string.CompareOrdinal);
         _connection.Open();
         Context = CreateContext();
         Context.Database.EnsureCreated();
