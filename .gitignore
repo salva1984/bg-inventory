@@ -15,8 +15,6 @@ TestResults/
 # Node / Angular
 node_modules/
 dist/
-# Generado por frontend/scripts/set-env.mjs desde API_URL
-frontend/src/environments/environment.ts
 .angular/
 
 # IDE / OS
