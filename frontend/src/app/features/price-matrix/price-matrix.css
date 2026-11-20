@@ -30,6 +30,18 @@ tbody tr {
   height: 64px;
 }
 
+/*
+ * Contenido alineado a la izquierda: la columna que asoma por la derecha se corta por su final,
+ * y así deja ver el inicio del precio y del nombre en vez de un hueco vacío.
+ * Los nombres de proveedor son largos, así que el encabezado puede saltar de línea.
+ */
+th.num,
+td.num {
+  text-align: left;
+  /* Divisor vertical tenue: marca dónde empieza cada proveedor, también el que asoma cortado. */
+  border-left: 1px solid var(--border);
+}
+
 th.num {
   white-space: normal;
 }
@@ -39,11 +51,6 @@ th.num {
  * derecho para que el botón siempre sea alcanzable. Necesita fondo propio (opaco) para tapar las
  * celdas que pasan por debajo, que replica el rayado y el hover de las filas.
  */
-/* Columna estrecha: solo cabe un botón con icono y una palabra. */
-.col-actions-compact {
-  width: 120px;
-}
-
 th.actions,
 td.actions {
   position: sticky;
@@ -63,4 +70,62 @@ tbody tr:nth-child(even) td.actions {
 
 tbody tr:hover td.actions {
   background: var(--muted);
+}
+
+/*
+ * Sombra de desplazamiento: indica que hay más proveedores a la izquierda de "Acciones".
+ * Se ata al scroll horizontal de .table-wrap (scroll-driven animation): visible mientras
+ * queden columnas por ver y se desvanece en los últimos píxeles, al llegar al final. Si la
+ * tabla no desborda, o el navegador no lo soporta, la sombra simplemente no aparece.
+ */ 
+@supports (animation-timeline: scroll()) {
+  th.actions::before,
+  td.actions::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -12px;
+    width: 12px;
+    background: linear-gradient(to left, rgb(24 35 43 / 14%), transparent);
+    opacity: 0;
+    pointer-events: none;
+    animation: fade-out-at-scroll-end linear both;
+    animation-timeline: scroll(nearest x);
+    animation-range: calc(100% - 48px) 100%;
+  }
+}
+
+@keyframes fade-out-at-scroll-end {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/*
+ * Columnas de proveedor "con asomo": su ancho se calcula con el ancho visible de la tabla para
+ * que quepan 4 completas y la mitad de la siguiente; esa mitad cortada delata que se puede
+ * desplazar. Al ser relativo al contenedor, el efecto se mantiene a cualquier ancho de ventana.
+ * Del ancho visible se descuentan la columna de producto y la de acciones, que es fija y
+ * tapa el borde derecho. Con pocos proveedores la tabla simplemente reparte el espacio sobrante.
+ */
+.table-wrap {
+  container-type: inline-size;
+  --product-column-width: 280px;
+  --actions-column-width: 120px;
+  --visible-suppliers: 4.5;
+}
+
+.col-product {
+  width: var(--product-column-width);
+}
+
+.col-supplier {
+  width: max(
+    180px,
+    calc((100cqw - var(--product-column-width) - var(--actions-column-width)) / var(--visible-suppliers))
+  );
+}
+
+.col-actions-compact {
+  width: var(--actions-column-width);
 }
