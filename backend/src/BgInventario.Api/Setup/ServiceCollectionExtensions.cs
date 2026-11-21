@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using BgInventario.Core.Entities;
+using BgInventario.Infrastructure.Assistant;
 using BgInventario.Infrastructure.Invoices;
 using BgInventario.Infrastructure.Persistence;
 using BgInventario.Infrastructure.Security;
@@ -30,6 +31,10 @@ public static class ServiceCollectionExtensions
 
     public const int InvoiceAnalysesPerWindow = 10;
     private static readonly TimeSpan InvoiceAnalysisWindow = TimeSpan.FromMinutes(1);
+
+    public const string AssistantRateLimit = "assistant";
+    public const int AssistantQuestionsPerWindow = 20;
+    private static readonly TimeSpan AssistantWindow = TimeSpan.FromMinutes(1);
 
     private static readonly TimeSpan PreflightCacheDuration = TimeSpan.FromMinutes(10);
 
@@ -112,16 +117,20 @@ public static class ServiceCollectionExtensions
                 _loginWindow => new FixedWindowRateLimiterOptions { 
                     PermitLimit = LoginAttemptsPerWindow, Window = LoginWindow }));
 
-            // One counter per signed-in user, so a loop in one client cannot run up the model bill
-            // nor block the other admins. Needs UseRateLimiter after UseAuthentication (Program.cs);
-            // before it every request would share the "anonymous" counter.
-            options.AddPolicy(InvoiceAnalysisRateLimit, httpContext => RateLimitPartition.GetFixedWindowLimiter(
-                httpContext.User.Identity?.Name ?? "anonymous",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = InvoiceAnalysesPerWindow, Window = InvoiceAnalysisWindow
-                }));
+            // The endpoints that call the model count per signed-in user, so a loop in one client
+            // cannot run up the model bill nor block the other users.
+            options.AddPolicy(InvoiceAnalysisRateLimit, httpContext =>
+                PerUserLimit(httpContext, InvoiceAnalysesPerWindow, InvoiceAnalysisWindow));
+            options.AddPolicy(AssistantRateLimit, httpContext =>
+                PerUserLimit(httpContext, AssistantQuestionsPerWindow, AssistantWindow));
         });
+
+    // Needs UseRateLimiter after UseAuthentication (Program.cs); before it every request would
+    // share the "anonymous" counter.
+    private static RateLimitPartition<string> PerUserLimit(HttpContext httpContext, int permits, TimeSpan window) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.User.Identity?.Name ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = window });
 
     private static void AddTelemetry(this IServiceCollection services) =>
         services.AddOpenTelemetry()
@@ -130,6 +139,7 @@ public static class ServiceCollectionExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddSqlClientInstrumentation()
                 .AddSource(InvoiceExtractionTelemetry.SourceName) // LLM calls of the invoice analysis
+                .AddSource(AssistantTelemetry.SourceName) // assistant: each model call and each tool it ran (execute_tool)
                 .AddOtlpExporter())
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()

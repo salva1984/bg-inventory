@@ -57,6 +57,7 @@ try
     app.MapDashboardEndpoints();
     app.MapClientLogEndpoints();
     app.MapInvoiceEndpoints();
+    app.MapAssistantEndpoints();
 
     if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     {

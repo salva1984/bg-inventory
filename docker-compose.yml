@@ -41,8 +41,9 @@ services:
       Seed__ViewerPassword: ${SEED_VIEWER_PASSWORD:-}
       Seed__SampleData: ${SEED_SAMPLE_DATA:-true}
       Seed__SampleProductCount: ${SEED_SAMPLE_PRODUCT_COUNT:-200}
-      # Optional: without a key the API starts and only the invoice analysis answers 503.
+      # Optional: without a key the API starts and only the invoice analysis and the assistant answer 503.
       InvoiceExtraction__ApiKey: ${OPENROUTER_API_KEY:-}
+      Assistant__ApiKey: ${OPENROUTER_API_KEY:-}
       Swagger__Enabled: "true"
       # Inside the compose network the dashboard receives OTLP on 18889 (4317 is only the host-side mapping).
       OTEL_EXPORTER_OTLP_ENDPOINT: http://dashboard:18889

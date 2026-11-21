@@ -1,0 +1,44 @@
+<header class="page-heading">
+  <h1>Asistente</h1>
+  @if (messages().length > 0) {
+    <button mat-stroked-button type="button" (click)="clear()" [disabled]="loading()">Nueva conversación</button>
+  }
+</header>
+<p class="table-help">
+  Pregunta por productos, existencias y precios por proveedor. El asistente consulta el inventario
+  en el momento y no modifica nada.
+</p>
+
+@if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+<section class="chat" aria-label="Conversación con el asistente">
+  <!-- aria-live: los lectores de pantalla anuncian cada respuesta nueva. -->
+  <div class="chat-log" #log aria-live="polite" [attr.aria-busy]="loading()">
+    @for (message of messages(); track $index) {
+      <div class="chat-message" [class.from-user]="message.role === 'User'">
+        <span class="chat-author">{{ message.role === 'User' ? 'Tú' : 'Asistente' }}</span>
+        <p>{{ message.content }}</p>
+      </div>
+    } @empty {
+      <div class="chat-empty">
+        <p>Prueba con una de estas preguntas:</p>
+        <div class="chat-examples">
+          @for (example of examples; track example) {
+            <button class="chat-example" type="button" (click)="send(example)">{{ example }}</button>
+          }
+        </div>
+      </div>
+    }
+    @if (loading()) { <p class="chat-thinking">Consultando el inventario…</p> }
+  </div>
+
+  <form class="chat-input" (ngSubmit)="send(question())">
+    <mat-form-field>
+      <mat-label>Pregunta</mat-label>
+      <textarea matInput name="question" rows="2" [(ngModel)]="question" [maxlength]="messageMaxLength"
+          (keydown.enter)="sendOnEnter($event)"></textarea>
+      <mat-hint align="end">{{ question().length }} / {{ messageMaxLength }}</mat-hint>
+    </mat-form-field>
+    <button mat-flat-button type="submit" [disabled]="loading() || !question().trim()">Enviar</button>
+  </form>
+</section>

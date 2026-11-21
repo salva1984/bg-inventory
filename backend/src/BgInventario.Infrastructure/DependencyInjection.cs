@@ -1,6 +1,8 @@
 using System.ClientModel;
 using BgInventario.Core.Common;
+using BgInventario.Core.Features.Assistant;
 using BgInventario.Core.Features.Auth;
+using BgInventario.Infrastructure.Assistant;
 using BgInventario.Core.Features.Invoices;
 using BgInventario.Infrastructure.Invoices;
 using BgInventario.Infrastructure.Persistence;
@@ -44,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
         services.AddInvoiceExtraction(configuration);
+        services.AddInventoryAssistant(configuration);
 
         return services;
     }
@@ -59,19 +62,53 @@ public static class DependencyInjection
             return;
         }
 
-        var clientOptions = new OpenAIClientOptions
-        {
-            Endpoint = new Uri(options.Endpoint),
-            NetworkTimeout = options.Timeout
-        };
-        var chatClient = new ChatClient(options.Model, new ApiKeyCredential(options.ApiKey!), clientOptions)
-            .AsIChatClient()
-            .AsBuilder()
-            .UseOpenTelemetry(sourceName: InvoiceExtractionTelemetry.SourceName)
-            .Build();
+        var chatClient = CreateChatClient(
+            options.Endpoint, options.Model, options.ApiKey!, options.Timeout, InvoiceExtractionTelemetry.SourceName);
 
         services.AddSingleton<IInvoiceExtractor>(sp => new LlmInvoiceExtractor(
             chatClient, options, sp.GetRequiredService<ILogger<LlmInvoiceExtractor>>()));
+    }
+
+    /// <summary>
+    /// Scoped, not singleton: its tools query the database with the DbContext of each request.
+    /// The model client itself is shared.
+    /// </summary>
+    private static void AddInventoryAssistant(this IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(AssistantOptions.SectionName).Get<AssistantOptions>()
+            ?? new AssistantOptions();
+
+        if (!options.IsConfigured)
+        {
+            services.AddSingleton<IInventoryAssistant, UnconfiguredInventoryAssistant>();
+            return;
+        }
+
+        var chatClient = CreateChatClient(
+            options.Endpoint, options.Model, options.ApiKey!, options.Timeout, AssistantTelemetry.SourceName);
+
+        services.AddScoped<IInventoryAssistant>(sp => new LlmInventoryAssistant(
+            chatClient,
+            options,
+            sp.GetRequiredService<InventoryTools>(),
+            sp.GetRequiredService<ILogger<LlmInventoryAssistant>>()));
+    }
+
+    /// <summary>Client for an OpenAI-compatible API (OpenRouter), with a trace span per model call.</summary>
+    private static IChatClient CreateChatClient(
+        string endpoint, string model, string apiKey, TimeSpan timeout, string telemetrySourceName)
+    {
+        var clientOptions = new OpenAIClientOptions
+        {
+            Endpoint = new Uri(endpoint),
+            NetworkTimeout = timeout
+        };
+
+        return new ChatClient(model, new ApiKeyCredential(apiKey), clientOptions)
+            .AsIChatClient()
+            .AsBuilder()
+            .UseOpenTelemetry(sourceName: telemetrySourceName)
+            .Build();
     }
 
     private static Task Seed(DbContext context, IServiceProvider sp, CancellationToken ct) =>

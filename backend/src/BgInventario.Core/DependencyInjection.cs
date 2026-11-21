@@ -1,3 +1,4 @@
+using BgInventario.Core.Features.Assistant;
 using BgInventario.Core.Features.Auth;
 using BgInventario.Core.Features.ClientLogs;
 using BgInventario.Core.Features.Dashboard;
@@ -12,6 +13,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddCore(this IServiceCollection services)
     {
+        services.AddScoped<InventoryTools>();
         services.AddScoped<AuthService>();
         services.AddScoped<ClientLogService>();
         services.AddScoped<DashboardService>();

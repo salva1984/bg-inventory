@@ -115,6 +115,7 @@ jobs:
           Seed__AdminPassword=secretref:seed-admin-password
           Seed__ViewerPassword=secretref:seed-viewer-password
           InvoiceExtraction__ApiKey=secretref:openrouter-api-key
+          Assistant__ApiKey=secretref:openrouter-api-key
           Database__MigrateOnStartup=true
           Seed__SampleData=true
           Seed__SampleProductCount=200

@@ -1,0 +1,92 @@
+/* Conversación en un módulo blanco, como las tablas: el historial arriba y el campo abajo. */
+.chat {
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
+}
+
+/* El historial se desplaza solo; el campo de la pregunta queda siempre a la vista. */
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 240px;
+  max-height: calc(100vh - 340px);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Las preguntas a la derecha en el color de selección; las respuestas a la izquierda en gris. */
+.chat-message {
+  align-self: flex-start;
+  max-width: min(75ch, 100%);
+  padding: 10px 12px;
+  background: var(--muted);
+  border-radius: var(--radius);
+}
+.chat-message.from-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.chat-author {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--subtle-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+/* pre-wrap: respeta los saltos de línea y los guiones de las listas que escribe el asistente. */
+.chat-message p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-empty p,
+.chat-thinking {
+  margin: 0;
+  color: var(--subtle-foreground);
+}
+.chat-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+/* Botones de texto libre (no mat-button): las preguntas largas se parten en varias líneas. */
+.chat-example {
+  padding: 6px 10px;
+  background: var(--background);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-example:hover,
+.chat-example:focus-visible {
+  background: var(--accent);
+  border-color: var(--primary);
+}
+
+.chat-input {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px 4px;
+  border-top: 1px solid var(--border);
+}
+.chat-input mat-form-field {
+  flex: 1;
+  min-width: 0;
+}
+/* Alineado con el borde superior del campo, no con su texto de ayuda. */
+.chat-input button {
+  margin-top: 8px;
+}

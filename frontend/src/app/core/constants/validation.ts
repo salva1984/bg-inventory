@@ -27,3 +27,7 @@ export const maxInvoiceFileBytes = maxInvoiceFileMegabytes * 1024 * 1024;
 
 // El número de factura se guarda como número de lote (InventoryLotLimits.LotNumberMaxLength).
 export const invoiceNumberMaxLength = 50;
+
+// Límites de la conversación con el asistente (AssistantLimits en la API).
+export const assistantMaxMessages = 20;
+export const assistantMessageMaxLength = 4000;

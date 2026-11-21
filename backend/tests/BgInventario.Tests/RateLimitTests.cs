@@ -19,6 +19,7 @@ namespace BgInventario.Tests;
 /// binding or validation without touching the database or the model. The limiter runs before the
 /// endpoint, so each one still spends a permit; the tests only look at whether the answer is 429.
 /// </summary>
+[Collection(ApiHostCollection.Name)]
 public sealed class RateLimitTests : IDisposable
 {
     private const string AnalyzeUrl = "/api/invoices/analyze";

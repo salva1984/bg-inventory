@@ -30,6 +30,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/price-matrix/price-matrix').then(m => m.PriceMatrix),
       },
       {
+        path: 'assistant',
+        title: 'Asistente',
+        loadComponent: () => import('./features/assistant/assistant').then(m => m.Assistant),
+      },
+      {
         path: 'invoices',
         title: 'Recepción de facturas',
         loadComponent: () => import('./features/invoices/invoices').then(m => m.Invoices),
