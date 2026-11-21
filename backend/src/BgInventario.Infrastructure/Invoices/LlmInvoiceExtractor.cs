@@ -169,15 +169,15 @@ internal sealed class LlmInvoiceExtractor(
         }
         catch (ClientResultException ex) when (IsRejectionOfInput(ex.Status))
         {
-            // The provider refused this input (too long for the context, too large, an image it
-            // cannot open...): retrying the same file fails the same way.
+            // The provider refused this input (too long, too large, unreadable image):
+            // retrying fails the same way.
             logger.LogWarning(ex, "The model provider rejected the invoice");
             return InvoiceErrors.ExtractionRejected;
         }
         catch (Exception ex) when (ex is ClientResultException or HttpRequestException
             || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
-            // Provider down, bad credentials, rate limit or timeout: not the user's fault, retry later.
+            // Provider down, bad credentials, rate limit or timeout.
             logger.LogError(ex, "The invoice extraction service failed");
             return InvoiceErrors.ExtractionFailed;
         }
@@ -236,8 +236,8 @@ internal sealed class LlmInvoiceExtractor(
     }
 
     /// <summary>
-    /// A 4xx answer is about the request, except for the ones that depend on our account or on
-    /// timing (bad key, no permission, timeout, rate limit): those are a service failure, retry later.
+    /// A 4xx is about the request, except those that depend on our account or timing
+    /// (bad key, no permission, timeout, rate limit): service failures.
     /// </summary>
     private static bool IsRejectionOfInput(int status)
     {
@@ -256,8 +256,7 @@ internal sealed class LlmInvoiceExtractor(
 
     private static string Format(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 
-    // The JSON schema the model must answer with. The date is a string because models are more
-    // reliable writing text than a typed date; it is parsed afterwards.
+    // The date is a string because models write text more reliably than typed dates; parsed afterwards.
     internal sealed record LlmInvoice(
         string? InvoiceNumber,
         string? IssueDate,

@@ -1,5 +1,4 @@
-// The order of the middlewares matters: the rate limiter goes after auth so it sees the signed-in user,
-// and a request without a valid token is rejected before it spends anyone's quota.
+// Rate limiter after auth: it needs the signed-in user, and invalid tokens never spend quota.
 using BgInventario.Api.Endpoints;
 using BgInventario.Api.Setup;
 using BgInventario.Core;
@@ -8,7 +7,7 @@ using BgInventario.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-// Bootstrap logger: captures errors that happen before the host is built.
+// Logs errors that happen before the host is built.
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
 try

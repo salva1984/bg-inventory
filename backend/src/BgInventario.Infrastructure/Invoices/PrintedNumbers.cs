@@ -9,9 +9,8 @@ internal static partial class PrintedNumbers
     private static partial Regex NumberToken();
 
     /// <summary>
-    /// Each token is read both ways, because invoices use either convention: "1.234,56" (comma as
-    /// decimal separator, usual in Ecuador) and "1,234.56". A wrong reading only adds a value that
-    /// no line will have, so keeping both is harmless.
+    /// Each token is read both ways: "1.234,56" (usual in Ecuador) and "1,234.56". A wrong
+    /// reading adds a value no line has, so it is harmless.
     /// </summary>
     public static HashSet<decimal> Find(string text)
     {

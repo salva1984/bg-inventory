@@ -6,8 +6,8 @@ namespace BgInventario.Core.Features.Invoices;
 
 public sealed class InvoiceLineMatcher(IAppDbContext db)
 {
-    // How many products the trigram query brings before scoring them. Larger than the candidates
-    // returned because the query ranks by shared trigrams, and the score also penalizes long names.
+    // Products fetched before scoring. More than the candidates returned: the query ranks by
+    // shared trigrams and the score also penalizes long names.
     internal const int CandidatePoolSize = 20;
 
     internal const int MaxCandidates = 5;
@@ -16,7 +16,7 @@ public sealed class InvoiceLineMatcher(IAppDbContext db)
 
     internal const double CandidateMinScore = 0.2;
 
-    // A description with fewer trigrams (e.g. "AB") matches almost anything; it goes straight to Manual.
+    // With fewer trigrams (e.g. "AB") almost anything matches; goes straight to Manual.
     internal const int MinSearchTrigrams = 4;
 
     private const double KnownEquivalenceScore = 1;
@@ -152,8 +152,7 @@ public sealed class InvoiceLineMatcher(IAppDbContext db)
         }
 
         /// <summary>
-        /// The supplier's code identifies a product only when every alias with that code agrees.
-        /// If the supplier used it for two different products, it is ambiguous and is not reused.
+        /// The supplier's code identifies a product only if all its aliases agree; otherwise it is ambiguous.
         /// </summary>
         private ProductCandidate? FindBySupplierItemCode(string itemCode)
         {

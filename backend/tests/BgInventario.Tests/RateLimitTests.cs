@@ -11,13 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace BgInventario.Tests;
 
 /// <summary>
-/// Rate limits over the real HTTP pipeline of Program.cs (WebApplicationFactory). They check the
-/// middleware order: the invoice-analysis limit must count per signed-in user, which only works
-/// when UseRateLimiter runs after UseAuthentication.
-///
-/// The requests are deliberately invalid (no file, malformed login) so they end in a 400 at model
-/// binding or validation without touching the database or the model. The limiter runs before the
-/// endpoint, so each one still spends a permit; the tests only look at whether the answer is 429.
+/// Rate limits over Program.cs's real pipeline: the per-user limit only works if UseRateLimiter
+/// runs after UseAuthentication. The requests are invalid on purpose (400, no database or
+/// model) but still spend a permit.
 /// </summary>
 [Collection(ApiHostCollection.Name)]
 public sealed class RateLimitTests : IDisposable
@@ -25,8 +21,7 @@ public sealed class RateLimitTests : IDisposable
     private const string AnalyzeUrl = "/api/invoices/analyze";
     private const string LoginUrl = "/api/auth/login";
 
-    // A new factory per test (xUnit creates one instance per test): each test starts with empty
-    // rate-limit windows.
+    // One factory per test: each starts with empty rate-limit windows.
     private readonly WebApplicationFactory<Program> _factory = new WebApplicationFactory<Program>()
         .WithWebHostBuilder(builder =>
         {

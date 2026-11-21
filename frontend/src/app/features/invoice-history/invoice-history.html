@@ -2,10 +2,6 @@
   <h1>Historial de facturas</h1>
   @if (isAdmin) { <a mat-flat-button routerLink="/invoices">Registrar factura</a> }
 </header>
-<p class="table-help">
-  Cada factura confirmada, con lo que se registró en cada línea y el archivo original.
-</p>
-
 @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
 
 @if (!isAdmin) {

@@ -4,10 +4,6 @@
     <button mat-stroked-button type="button" (click)="clear()" [disabled]="loading()">Nueva conversación</button>
   }
 </header>
-<p class="table-help">
-  Pregunta por productos, existencias y precios por proveedor. El asistente consulta el inventario
-  en el momento y no modifica nada.
-</p>
 
 @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
 

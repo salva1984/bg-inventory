@@ -69,10 +69,7 @@ public static class DependencyInjection
             chatClient, options, sp.GetRequiredService<ILogger<LlmInvoiceExtractor>>()));
     }
 
-    /// <summary>
-    /// Scoped, not singleton: its tools query the database with the DbContext of each request.
-    /// The model client itself is shared.
-    /// </summary>
+    /// <summary>Scoped because its tools use the request's DbContext; the model client is shared.</summary>
     private static void AddInventoryAssistant(this IServiceCollection services, IConfiguration configuration)
     {
         var options = configuration.GetSection(AssistantOptions.SectionName).Get<AssistantOptions>()

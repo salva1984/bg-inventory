@@ -350,14 +350,6 @@ td strong {
 .danger:focus-visible {
   color: var(--destructive) !important;
 }
-.table-help {
-  max-width: 72ch;
-  color: var(--muted-foreground);
-}
-/* Descripción de pantalla: va debajo del encabezado para no alterar su altura. */
-.page-heading + .table-help {
-  margin: -8px 0 16px;
-}
 .empty {
   padding: 40px 16px;
   background: var(--background);

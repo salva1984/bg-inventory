@@ -110,9 +110,8 @@ public enum IssuerCheck
 }
 
 /// <summary>
-/// The lines were matched with the aliases of <see cref="SupplierId"/>, the supplier the user chose.
-/// When <see cref="IssuerCheck"/> is not Matches, that choice may be wrong and the user must decide
-/// before confirming: the stock and the aliases would go to that supplier.
+/// Lines matched with the aliases of <see cref="SupplierId"/>, the supplier the user chose. If
+/// <see cref="IssuerCheck"/> is not Matches that choice may be wrong: stock and aliases go to it.
 /// </summary>
 public sealed record InvoiceAnalysis(
     int SupplierId,
@@ -127,15 +126,14 @@ public sealed record InvoiceAnalysis(
     IReadOnlyList<string> Warnings);
 
 /// <summary>
-/// Lines already reviewed by the user, each one with the product it really is. The invoice file
-/// travels again (base64 in the JSON) so the history keeps the original next to what was registered.
+/// Lines reviewed by the user. The invoice file travels again (base64) so the history keeps the original.
 /// </summary>
 public sealed record ConfirmInvoiceRequest(
     [property: Range(1, int.MaxValue)] int SupplierId,
-    // Becomes the lot number of the received stock, so it has the lot's size limit.
+    // Becomes the lot number, so it has the lot's size limit.
     [property: Required, StringLength(InventoryLotLimits.LotNumberMaxLength)] string InvoiceNumber,
     DateOnly? IssueDate,
-    // The total with taxes as the analysis read it. Only shown in the history.
+    // Total with taxes as read by the analysis; only shown in the history.
     [property: Range(typeof(decimal), "0", InvoiceReceiptLimits.MaxAmount)] decimal? InvoiceTotal,
     [property: Required] InvoiceFileUpload File,
     [property: Required, MinLength(1)] IReadOnlyList<ConfirmInvoiceLineRequest> Lines,

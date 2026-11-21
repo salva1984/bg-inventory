@@ -2,11 +2,6 @@
   <h1>Recepción de facturas</h1>
   @if (isAdmin) { <a mat-stroked-button routerLink="/invoice-history">Ver historial</a> }
 </header>
-<p class="table-help">
-  Sube la factura del proveedor y revisa el producto de cada línea. El stock solo cambia al
-  registrar el ingreso, y cada confirmación enseña al sistema cómo nombra ese proveedor a sus productos.
-</p>
-
 @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
 @if (notice()) { <div class="message success" role="status">{{ notice() }}</div> }
 

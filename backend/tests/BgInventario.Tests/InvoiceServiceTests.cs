@@ -414,9 +414,8 @@ public sealed class InvoiceServiceTests : IDisposable
     [Fact]
     public void Keys_computed_in_csharp_use_a_binary_collation()
     {
-        // The SQL Server default collation would treat as equal values that C# keeps apart
-        // (e.g. full-width "ＨＰ" and "hp") and break the unique keys.
-        // The collation is schema metadata: only the design-time model keeps it.
+        // The SQL Server default collation equates values C# keeps apart (full-width "ＨＰ" and "hp")
+        // and breaks unique keys. The collation is schema metadata: only the design-time model keeps it.
         var model = _db.Context.GetService<IDesignTimeModel>().Model;
         var trigram = model.FindEntityType(typeof(ProductTrigram))!.FindProperty(nameof(ProductTrigram.Trigram))!;
         var aliasKey = model.FindEntityType(typeof(SupplierProductAlias))!

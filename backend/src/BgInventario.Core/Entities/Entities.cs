@@ -35,12 +35,12 @@ public class User : IAuditable
 
 public static class UserLimits
 {
-    // Longest address allowed by SMTP (RFC 5321 path limit).
+    // SMTP maximum address length (RFC 5321).
     public const int EmailMaxLength = 254;
     public const int FullNameMaxLength = 150;
     public const int PasswordMaxLength = 100;
 
-    // Identity's PBKDF2 hashes are ~84 chars in base64; the margin allows future algorithms.
+    // PBKDF2 hashes take ~84 chars in base64; margin for other algorithms.
     public const int PasswordHashMaxLength = 500;
     public const int RoleMaxLength = 20;
 }
@@ -167,15 +167,15 @@ public class InvoiceReceipt : IAuditable
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    // No navigation to Supplier or Product: they have soft-delete query filters, and joining
-    // through them would hide the history of a deleted supplier or product. The copied names are used.
+    // No navigation to Supplier or Product: their soft-delete filters would hide the history
+    // of deleted ones. The copied names are used instead.
     public User RegisteredBy { get; set; } = null!;
     public List<InvoiceReceiptLine> Lines { get; set; } = [];
 }
 
 public static class InvoiceReceiptLimits
 {
-    // An invoice is a few pages; the limit protects the server's memory and keeps the stored file small.
+    // Caps server memory and the size of the stored file.
     public const int MaxFileMegabytes = 10;
     public const int MaxFileBytes = MaxFileMegabytes * 1024 * 1024;
 
@@ -183,8 +183,8 @@ public static class InvoiceReceiptLimits
 
     public const int FileContentTypeMaxLength = 50;
 
-    // Amounts of a whole invoice. A line can reach int.MaxValue units × MaxPrice (about 2.1e18),
-    // which needs 19 integer digits: more than the 16 of a price's decimal(18,2).
+    // Amounts of a whole invoice: a line can reach int.MaxValue × MaxPrice (~2.1e18),
+    // 19 integer digits, more than the 16 of a price's decimal(18,2).
     public const int AmountPrecision = 21;
     public const string MaxAmount = "9999999999999999999.99";
 }

@@ -8,7 +8,7 @@ public static class ProductSearchIndex
 {
     public static string Normalize(string text)
     {
-        // FormD splits "ó" into "o" + a combining accent, which the loop below drops.
+        // FormD splits "ó" into "o" + accent; the loop drops the accent.
         var decomposed = text.Normalize(NormalizationForm.FormD);
         var builder = new StringBuilder(decomposed.Length);
         var lastWasSpace = true; // avoids a leading space
@@ -77,9 +77,8 @@ public static class ProductSearchIndex
         GetTrigrams($"{product.Name} {product.Code}");
 
     /// <summary>
-    /// Makes the product's trigram rows match its current name and code. Only the difference is
-    /// added or removed: EF would reject removing and re-adding a row with the same key.
-    /// The product must be loaded with its <see cref="Product.Trigrams"/>.
+    /// Syncs the product's trigram rows with its name and code. Only the difference is added or
+    /// removed: EF rejects removing and re-adding the same key. Needs <see cref="Product.Trigrams"/> loaded.
     /// </summary>
     public static void Refresh(Product product)
     {

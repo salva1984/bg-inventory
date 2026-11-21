@@ -11,7 +11,7 @@ public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
     public async Task<DashboardSummary> GetSummaryAsync(CancellationToken ct) =>
         await cache.GetOrCreateAsync(async token => await ComputeSummaryAsync(token), ct);
 
-    // The queries run one after another: a DbContext does not allow parallel queries.
+    // One after another: a DbContext does not allow parallel queries.
     private async Task<DashboardSummary> ComputeSummaryAsync(CancellationToken ct)
     {
         var totals = await GetTotalsAsync(ct);
@@ -33,8 +33,7 @@ public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
         return new DashboardTotals(productCount, supplierCount, outOfStockCount, totalUnits, inventoryValue);
     }
 
-    // The lists are sorted over an anonymous type and mapped to the record afterwards:
-    // EF cannot translate an ORDER BY over a member of a positional record.
+    // Sorted over an anonymous type and mapped after: EF cannot ORDER BY a positional record member.
     private async Task<List<SupplierInventoryValue>> GetValueBySupplierAsync(CancellationToken ct)
     {
         var ranked = await db.InventoryLots.AsNoTracking()
@@ -84,8 +83,8 @@ public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
             })
             .Where(p => p.MaxPrice > p.MinPrice);
 
-        // Ranked by the relative gap: a $50 gap matters more on a $100 item than on a $2,000 one.
-        // MinPrice is always > 0 (check constraint on Price), so the division is safe.
+        // Relative gap: $50 matters more on a $100 item than on a $2,000 one.
+        // MinPrice > 0 (check constraint), so the division is safe.
         var ranked = await priceRanges
             .OrderByDescending(p => (p.MaxPrice - p.MinPrice) / p.MinPrice)
             .ThenBy(p => p.Name)

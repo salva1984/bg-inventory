@@ -95,8 +95,8 @@ public sealed class SupplierService(IAppDbContext db, TimeProvider clock, Dashbo
             return NotFound;
         }
 
-        // Deleting it would leave products without the supplier of their stock. Lots of deleted
-        // products are hidden by the query filter, so they do not block the delete.
+        // Would leave products without the supplier of their stock. Lots of deleted products are
+        // hidden by the filter and do not block.
         var hasInventory = await db.InventoryLots.AnyAsync(lot => lot.SupplierId == id, ct);
         if (hasInventory)
         {

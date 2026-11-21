@@ -18,8 +18,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-    // Every DateTime is stored in UTC; marking it as Utc on read makes the JSON carry the "Z"
-    // so clients convert it to their local time correctly.
+    // DateTimes are stored in UTC; marking them Utc on read makes the JSON carry the "Z"
+    // so clients convert to local time.
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
 

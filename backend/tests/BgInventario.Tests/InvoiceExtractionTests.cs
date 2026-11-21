@@ -120,7 +120,7 @@ public sealed class PdfPageReaderTests
     [Fact]
     public void Pdf_with_too_much_text_is_rejected()
     {
-        // 15 pages × 60 lines × 120 characters ≈ 108,000 characters, over the limit in fewer pages than the maximum.
+        // 15 pages × 60 lines × 120 characters ≈ 108,000, over the limit with fewer pages than the maximum.
         var result = ReadPages(TestPdf.TextPages(pageCount: 15, linesPerPage: 60, lineLength: 120));
 
         Assert.Equal(InvoiceErrors.DocumentTooLarge, result.Error);
@@ -259,8 +259,8 @@ public sealed class LlmInvoiceExtractorTests
         new("provider error", new FakeResponse(status));
 
     /// <summary>
-    /// Answers every request with a fixed text and remembers what it was sent; with
-    /// <see cref="Failure"/> it throws instead, like the provider's SDK on an HTTP error.
+    /// Answers every request with a fixed text and records it; with <see cref="Failure"/> it
+    /// throws like the provider's SDK on an HTTP error.
     /// </summary>
     private sealed class FakeChatClient(string answer) : IChatClient
     {

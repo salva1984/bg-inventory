@@ -17,13 +17,13 @@ public sealed class InvoiceService(
 {
     internal const decimal SubtotalTolerance = 0.05m;
 
-    // Largest values a confirmed line accepts (see ConfirmInvoiceLineRequest): the stock is an int
-    // and the price has the lot's limit. What the model reads is checked against the same limits.
+    // Largest values a confirmed line accepts (ConfirmInvoiceLineRequest). What the model
+    // reads is checked against the same limits.
     private const decimal MaxQuantity = int.MaxValue;
     private static readonly decimal MaxUnitPrice = (decimal)InventoryLotLimits.MaxPrice;
 
-    // From this similarity on, two supplier names are the same company: the invoice may write it with
-    // or without accents, punctuation or the legal suffix ("CÍA. LTDA." and "Cia Ltda").
+    // Minimum similarity to treat two supplier names as one company, ignoring accents,
+    // punctuation and legal suffix ("CÍA. LTDA." vs "Cia Ltda").
     internal const double SameSupplierMinSimilarity = 0.6;
 
     public async Task<Result<InvoiceAnalysis>> AnalyzeAsync(int supplierId, byte[] content, CancellationToken ct)
@@ -78,8 +78,8 @@ public sealed class InvoiceService(
     }
 
     /// <summary>
-    /// The issuer is the registered supplier whose name is most similar, not just any name above the
-    /// threshold: "Distribuidora Andina S.A." and "Distribuidora del Pacífico S.A." share most words.
+    /// The issuer is the most similar registered supplier, not any above the threshold:
+    /// "Distribuidora Andina S.A." and "Distribuidora del Pacífico S.A." share most words.
     /// </summary>
     private async Task<(IssuerCheck Check, SupplierLookup? Suggested)> CheckIssuerAsync(
         int supplierId, string? issuerName, CancellationToken ct)
@@ -115,8 +115,8 @@ public sealed class InvoiceService(
     public async Task<Result<ConfirmedInvoice>> ConfirmAsync(
         ConfirmInvoiceRequest request, int userId, CancellationToken ct)
     {
-        // Each line fits in an int, but their sum may not: the lots' stock and the units received
-        // are ints. Summed as long so the check itself cannot overflow.
+        // Each line fits an int but their sum may not (lot stock and units received are ints);
+        // summed as long.
         var totalUnits = request.Lines.Sum(line => (long)line.Quantity);
         var exceedsStockLimit = totalUnits > int.MaxValue;
         if (exceedsStockLimit)
@@ -146,8 +146,8 @@ public sealed class InvoiceService(
             return InvoiceErrors.UnknownSupplier;
         }
 
-        // The invoice number is the lot number. Registering it again needs the user's explicit
-        // consent; the frontend asks after receiving this error.
+        // The invoice number is the lot number. Registering it again needs explicit consent;
+        // the frontend asks after this error.
         var lotNumber = ProductService.NormalizeLot(request.InvoiceNumber);
         var isRegistered = await IsRegisteredAsync(request.SupplierId, lotNumber, ct);
         var registersAgainWithoutConsent = isRegistered && !request.RegisterAgain;
@@ -163,8 +163,8 @@ public sealed class InvoiceService(
             return InvoiceErrors.UnknownProduct;
         }
 
-        // A product already in a lot with this number (the invoice registered again, or a lot entered
-        // by hand) gets the stock added there: the lot key is product + supplier + lot number.
+        // A product already in a lot with this number (invoice registered again, or lot entered by
+        // hand) gets the stock added there. Lot key: product + supplier + lot number.
         var receivedStock = SumByProduct(request.Lines);
         var existingLots = await db.InventoryLots
             .Where(lot => lot.SupplierId == request.SupplierId && lot.LotNumber == lotNumber && productIds.Contains(lot.ProductId))
@@ -257,9 +257,8 @@ public sealed class InvoiceService(
             .ToList();
 
     /// <summary>
-    /// Puts the received stock in the product's lot. A new lot takes the average price of what was
-    /// received; an existing one adds the units and its price becomes the average weighted by
-    /// quantity of what it had and what arrived.
+    /// Puts received stock in the product's lot. A new lot takes the average price received;
+    /// an existing one weights its price by quantity.
     /// </summary>
     private void AddToLots(
         int supplierId,
@@ -303,8 +302,8 @@ public sealed class InvoiceService(
             .ToDictionary(group => group.Key, group => group.Last().Line);
 
         var keys = confirmedByDescription.Keys.ToList();
-        // Without the query filter: an alias of a product deleted later is hidden by it but still
-        // holds the unique (supplier, description) key, so it must be reused, not duplicated.
+        // Unfiltered: an alias of a deleted product is hidden but still holds the unique
+        // (supplier, description) key, so it must be reused.
         var existingByKey = await db.SupplierProductAliases
             .IgnoreQueryFilters()
             .Where(a => a.SupplierId == supplierId && keys.Contains(a.NormalizedDescription))
@@ -351,9 +350,8 @@ public sealed class InvoiceService(
             return true;
         }
 
-        // Without the query filter: the lots of products deleted later still mean the invoice was
-        // registered. The lots also cover invoices confirmed before the history existed and lots
-        // entered by hand with that number.
+        // Unfiltered: lots of deleted products, invoices from before the history and lots
+        // entered by hand also mean it was registered.
         return await db.InventoryLots
             .IgnoreQueryFilters()
             .AnyAsync(lot => lot.SupplierId == supplierId && lot.LotNumber == lotNumber, ct);
@@ -396,15 +394,15 @@ public sealed class InvoiceService(
             }
         }
 
-        // The subtotal is printed on the invoice; if the lines do not add up to it, something was misread.
-        // The model can answer any number, so the sum is only computed when every line is within the
-        // limits: then no product or sum can overflow a decimal. A line out of limits already has its warning.
+        // If the lines do not add up to the printed subtotal, something was misread. The sum is only
+        // computed when every line is within limits, so nothing overflows a decimal; an
+        // out-of-limit line already has its warning.
         var linesAreWithinLimits = invoice.Lines.All(IsWithinLimits);
         if (invoice.Subtotal is { } subtotal && linesAreWithinLimits)
         {
             var linesTotal = invoice.Lines.Sum(line => line.Quantity * line.UnitPrice);
-            // A negative subtotal is a misreading; checked first so the difference of two
-            // non-negative values is the only one computed (it cannot overflow).
+            // A negative subtotal is a misreading; checked first so only a difference of
+            // non-negatives is computed.
             var exceedsTolerance = subtotal < 0 || Math.Abs(linesTotal - subtotal) > SubtotalTolerance;
             if (exceedsTolerance)
             {

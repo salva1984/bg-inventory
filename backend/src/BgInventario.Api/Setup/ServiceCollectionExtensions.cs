@@ -117,16 +117,15 @@ public static class ServiceCollectionExtensions
                 _loginWindow => new FixedWindowRateLimiterOptions { 
                     PermitLimit = LoginAttemptsPerWindow, Window = LoginWindow }));
 
-            // The endpoints that call the model count per signed-in user, so a loop in one client
-            // cannot run up the model bill nor block the other users.
+            // Per signed-in user: a loop in one client cannot run up the model bill or block the others.
             options.AddPolicy(InvoiceAnalysisRateLimit, httpContext =>
                 PerUserLimit(httpContext, InvoiceAnalysesPerWindow, InvoiceAnalysisWindow));
             options.AddPolicy(AssistantRateLimit, httpContext =>
                 PerUserLimit(httpContext, AssistantQuestionsPerWindow, AssistantWindow));
         });
 
-    // Needs UseRateLimiter after UseAuthentication (Program.cs); before it every request would
-    // share the "anonymous" counter.
+    // Needs UseRateLimiter after UseAuthentication (Program.cs); otherwise everyone
+    // shares the "anonymous" counter.
     private static RateLimitPartition<string> PerUserLimit(HttpContext httpContext, int permits, TimeSpan window) =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.User.Identity?.Name ?? "anonymous",

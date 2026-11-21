@@ -7,7 +7,7 @@ internal sealed record GeneratedSampleData(List<Supplier> Suppliers, List<Produc
 
 internal static class SampleDataGenerator
 {
-    // Fixed seed: every run generates exactly the same data, so whoever reviews the app sees the same catalog.
+    // Fixed seed: every run generates the same catalog.
     private const int RandomSeed = 2026;
 
     private const int MaxLotsPerProduct = 3;

@@ -10,10 +10,9 @@ file static class SoftDelete
 }
 
 /// <summary>
-/// Collation for keys computed in C# (normalized texts, trigrams). The database default is case-,
-/// accent- and width-insensitive, so two values that C# keeps apart (ordinal comparison) could be
-/// equal for SQL Server and break a unique key. A binary collation compares them like C# does.
-/// The SQLite test database registers a collation with this name that compares ordinally (TestDb).
+/// Collation for keys computed in C#. The database default is case-, accent- and width-insensitive,
+/// so values C# keeps apart could collide in a unique key; binary compares like C#.
+/// The SQLite tests register an ordinal collation of this name (TestDb).
 /// </summary>
 internal static class Collations
 {
@@ -90,8 +89,8 @@ internal sealed class ProductTrigramConfiguration : IEntityTypeConfiguration<Pro
 {
     public void Configure(EntityTypeBuilder<ProductTrigram> b)
     {
-        // The key starts with the trigram: the candidate search filters by trigram and groups by product,
-        // so this clustered index serves it directly. The product id is the second key column.
+        // Starts with the trigram: the candidate search filters by trigram and groups by product,
+        // which this clustered index serves directly.
         b.HasKey(t => new { t.Trigram, t.ProductId });
         b.Property(t => t.Trigram)
             .HasMaxLength(ProductTrigramLimits.TrigramLength)
@@ -120,8 +119,8 @@ internal sealed class SupplierProductAliasConfiguration : IEntityTypeConfigurati
 
         b.HasIndex(a => new { a.SupplierId, a.NormalizedDescription }).IsUnique();
 
-        // Not unique: the same item code can arrive with different descriptions. The matcher only trusts
-        // it when every alias with that code points to the same product.
+        // Not unique: one item code can arrive with different descriptions; the matcher trusts it
+        // only if all its aliases point to the same product.
         b.HasIndex(a => new { a.SupplierId, a.SupplierItemCode });
 
         b.HasQueryFilter(a => a.Product.DeletedAt == null && a.Supplier.DeletedAt == null);
@@ -151,12 +150,11 @@ internal sealed class InvoiceReceiptConfiguration : IEntityTypeConfiguration<Inv
 
         b.HasIndex(r => r.CreatedAt);
 
-        // Not unique: an invoice can be registered again on purpose (see InvoiceService.ConfirmAsync),
-        // and each registration keeps its own record. Used to know whether it was already registered.
+        // Not unique: an invoice can be registered again on purpose (InvoiceService.ConfirmAsync);
+        // each registration has its own record.
         b.HasIndex(r => new { r.SupplierId, r.InvoiceNumber });
 
-        // Without navigation (see InvoiceReceipt): only the foreign key. Restrict, because the history
-        // must not disappear with a supplier; suppliers are only soft-deleted anyway.
+        // FK only, no navigation (see InvoiceReceipt). Restrict: the history must outlive a supplier.
         b.HasOne<Supplier>()
             .WithMany()
             .HasForeignKey(r => r.SupplierId)

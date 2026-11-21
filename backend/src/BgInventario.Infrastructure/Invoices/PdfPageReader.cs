@@ -17,15 +17,15 @@ internal static class PdfPageReader
 {
     private const int MinLettersForTextPage = 20;
 
-    // Share of letters that must be readable characters; fonts without a Unicode map produce
-    // replacement or private-use characters, and then the image is more reliable than the text.
+    // Minimum share of readable letters: fonts without a Unicode map give replacement or
+    // private-use characters, and then the image beats the text.
     private const double MinReadableRatio = 0.9;
 
     private const int RenderDpi = 200;
 
     internal const int MaxPages = 20;
 
-    // Text sent to the model, in characters (about 25,000 tokens): bounds the cost of one analysis.
+    // Characters sent to the model (~25,000 tokens): bounds the cost of one analysis.
     internal const int MaxTextCharacters = 100_000;
 
     public static Result<List<InvoicePage>> ReadPages(byte[] pdf, int maxScannedPages)
@@ -36,8 +36,8 @@ internal static class PdfPageReader
             return InvoiceErrors.DocumentTooLarge;
         }
 
-        // Pages with text are read as text right away (cheap); scanned pages are only counted,
-        // because rendering them is the expensive part and the limits must be checked first.
+        // Text pages are read now (cheap); scanned ones are only counted, since rendering is
+        // expensive and the limits are checked first.
         var (textPages, scannedPageNumbers) = SplitByTextLayer(document);
 
         if (ExceedsTextLimit(textPages))
@@ -110,8 +110,8 @@ internal static class PdfPageReader
     }
 
     /// <summary>
-    /// Some generators fake bold text by drawing each letter twice at almost the same spot, which
-    /// would read as "TToottaall". Letters with the same value at the same rounded position are kept once.
+    /// Some generators fake bold by drawing each letter twice ("TToottaall"): letters with the
+    /// same value at the same rounded position are kept once.
     /// </summary>
     private static List<Letter> WithoutOverlappingDuplicates(IReadOnlyList<Letter> letters) =>
         letters
@@ -149,8 +149,7 @@ internal static class PdfPageReader
 
     private static byte[] RenderPng(byte[] pdf, int pageIndex)
     {
-        // PDFium ships native binaries only for these systems; the API runs on Linux (container)
-        // and is developed on any of the three. The check also tells the analyzer (CA1416).
+        // PDFium ships native binaries only for these systems. Also satisfies analyzer CA1416.
         if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
         {
             using var image = new MemoryStream();

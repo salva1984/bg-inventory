@@ -142,8 +142,8 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
         SyncLots(product, lots);
         ProductSearchIndex.Refresh(product); // the name or code may have changed
 
-        // Editing only the inventory does not modify a column of the product, so the audit
-        // interceptor would not stamp it; we mark it explicitly so "last updated" is truthful.
+        // Editing inventory touches no product column, so the audit interceptor would not stamp it;
+        // marked explicitly so "last updated" is truthful.
         product.UpdatedAt = clock.GetUtcNow().UtcDateTime;
 
         await db.SaveChangesAsync(ct);
@@ -168,10 +168,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
         return Result.Success();
     }
 
-    /// <summary>
-    /// Quick stock exit: subtracts units from one lot of the product. Returns the updated product
-    /// so the client can show the new stock without another request.
-    /// </summary>
+    /// <summary>Quick stock exit from one lot. Returns the updated product.</summary>
     public async Task<Result<ProductDetail>> WithdrawStockAsync(
         int productId, int lotId, WithdrawStockRequest request, CancellationToken ct)
     {
@@ -193,17 +190,16 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
     }
 
     /// <summary>
-    /// Subtracts in a single conditional UPDATE: if two people withdraw at the same time, the
-    /// database decides who gets the units and the stock never goes below zero.
-    /// Returns false when the lot does not have enough stock.
+    /// Subtracts in one conditional UPDATE so concurrent withdrawals never take stock below zero.
+    /// False when the lot lacks stock.
     /// </summary>
     private async Task<bool> TrySubtractStockAsync(int productId, int lotId, int quantity, CancellationToken ct)
     {
         // ExecuteUpdate skips the audit interceptor, so both dates are stamped here.
         var now = clock.GetUtcNow().UtcDateTime;
 
-        // The soft-delete filter joins Product and Supplier, which SQLite cannot translate inside an
-        // UPDATE. It is safe to skip it: the caller already checked the lot with the filters applied.
+        // SQLite cannot translate the soft-delete join inside an UPDATE; skipping it is safe,
+        // the caller already checked the lot with the filters.
         var updatedLots = await db.InventoryLots
             .IgnoreQueryFilters()
             .Where(lot => lot.Id == lotId && lot.Stock >= quantity)
@@ -215,7 +211,7 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
             return false;
         }
 
-        // The product list shows "last updated"; a stock exit counts as a change of the product.
+        // A stock exit counts as a change of the product ("last updated").
         await db.Products
             .Where(p => p.Id == productId)
             .ExecuteUpdateAsync(set => set.SetProperty(p => p.UpdatedAt, now), ct);
@@ -241,8 +237,8 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
     }
 
     /// <summary>
-    /// Sorting is applied to the entity, before projecting: EF cannot translate an ORDER BY over a
-    /// positional record. Ties on totals fall back to the name so pages are stable.
+    /// Sorted on the entity before projecting (EF cannot ORDER BY a positional record).
+    /// Ties fall back to the name so pages are stable.
     /// </summary>
     private static IQueryable<Product> SortProducts(IQueryable<Product> products, ProductSortBy sortBy, bool descending) =>
         (sortBy, descending) switch

@@ -11,8 +11,7 @@ namespace BgInventario.Api.Endpoints;
 
 public static class InvoiceEndpoints
 {
-    // The file is read whole before knowing whether it is an invoice; the limit protects the
-    // server's memory (InvoiceReceiptLimits.MaxFileBytes).
+    // Caps the memory used to read the file whole (InvoiceReceiptLimits.MaxFileBytes).
     private const long MaxFileBytes = InvoiceReceiptLimits.MaxFileBytes;
 
     private const long MultipartOverheadBytes = 64 * 1024;
@@ -32,7 +31,7 @@ public static class InvoiceEndpoints
 
         group.MapPost("/analyze", Analyze)
             .WithSummary("Lee una factura (PDF o imagen) y propone el producto de cada línea; no guarda nada")
-            // The token travels in a header, not in a cookie, so a form post cannot be forged (no CSRF).
+            // Token in a header, not a cookie, so no CSRF.
             .DisableAntiforgery()
             .WithMetadata(new RequestSizeLimitAttribute(MaxFileBytes + MultipartOverheadBytes))
             .RequireRateLimiting(ServiceCollectionExtensions.InvoiceAnalysisRateLimit)
