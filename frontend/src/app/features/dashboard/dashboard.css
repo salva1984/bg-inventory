@@ -1,35 +1,43 @@
 /* ---------- Cifras principales ---------- */
-/* Una fila de tarjetas que pasa a dos o una columna según el ancho disponible. */
+/*
+ * Una fila de módulos pegados, separados por filete, que pasa a dos o una columna según el
+ * ancho disponible. La regla azul de arriba es la del resto de módulos.
+ */
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 1px;
+  margin-bottom: 16px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
+  overflow: hidden;
 }
 .kpi {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  padding: 16px 18px;
+  gap: 2px;
+  padding: 12px 16px;
   background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 .kpi-label {
   color: var(--muted-foreground);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 .kpi-value {
   font-size: 28px;
   font-weight: 600;
   line-height: 1.2;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .kpi-detail {
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* ---------- Paneles ---------- */
@@ -37,25 +45,38 @@
 .panels {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 .panel {
   min-width: 0;
-  padding: 18px 20px;
+  padding: 0 16px 14px;
+  /* Recorta el fondo de las filas con las esquinas redondeadas del panel. */
+  overflow: hidden;
   background: var(--background);
   border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
 }
 .panel-wide {
   grid-column: 1 / -1;
 }
+/*
+ * El título es la barra del módulo: ocupa todo el ancho con fondo gris y filete debajo.
+ * Sus esquinas superiores siguen las del módulo (descontando la regla de 2px).
+ */
 .panel h2 {
-  font-size: 17px;
+  margin: 0 -16px;
+  padding: 9px 16px;
+  border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
+  background: var(--module-header);
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
 }
 .panel-hint {
-  margin: 4px 0 14px;
+  margin: 10px 0 10px;
   color: var(--muted-foreground);
-  font-size: 14px;
+  font-size: 13px;
 }
 .panel-empty {
   padding: 24px 0;
@@ -63,13 +84,20 @@
   text-align: center;
 }
 
-/* Las tablas del panel son cortas: no necesitan el ancho mínimo de las listas. */
+/*
+ * Las tablas del panel son cortas: no necesitan el ancho mínimo de las listas.
+ * Van de borde a borde del panel, como la barra de título: el panel ya es el marco,
+ * así que la tabla no lleva borde ni esquinas propias.
+ */
 .panel table {
   min-width: 0;
+  width: calc(100% + 32px);
+  /* El margen inferior negativo anula el relleno del panel: la última fila llega al borde. */
+  margin: 0 -16px -14px;
 }
 .panel th,
 .panel td {
-  padding: 10px 12px;
+  padding: 7px 10px;
 }
 .col-spread {
   width: 110px;
@@ -80,7 +108,7 @@
   text-align: center;
 }
 .panel td.actions {
-  padding: 10px 4px;
+  padding: 4px;
   text-align: center;
 }
 
@@ -89,33 +117,42 @@
 .bars {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .bar-row {
   display: grid;
-  grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 110px;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 110px;
   align-items: center;
   gap: 12px;
 }
-.bar-track {
-  height: 18px;
+.bar-name {
+  font-weight: 500;
 }
-/* Barra delgada de un solo color; esquinas redondeadas solo en el extremo del dato. */
+/* El riel gris muestra el 100 %: la barra se lee como proporción, no como adorno. */
+.bar-track {
+  height: 10px;
+  border-radius: var(--radius-xs);
+  background: var(--muted);
+}
+/*
+ * Barra plana de un solo color, en un azul más claro que el de las acciones para que el
+ * gráfico no pese más que los datos; al apuntarla toma el azul pleno.
+ */
 .bar {
   display: block;
   height: 100%;
   min-width: 2px;
-  background: var(--primary);
-  border-radius: 0 4px 4px 0;
+  border-radius: var(--radius-xs);
+  background: color-mix(in oklab, var(--primary) 70%, white);
 }
 .bar-row:hover .bar {
-  background: var(--primary-hover);
+  background: var(--primary);
 }
 .bar-value {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ---------- Pantallas pequeñas ---------- */

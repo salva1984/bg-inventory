@@ -4,11 +4,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace BgInventario.Infrastructure.Persistence;
 
-/// <summary>
-/// Fills CreatedAt/UpdatedAt of every <see cref="IAuditable"/> entity on save, so the use cases
-/// never have to remember it. It only knows about the entity being saved; business rules such as
-/// "editing a lot updates its product" belong to the use case.
-/// </summary>
 public sealed class AuditInterceptor(TimeProvider clock) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(

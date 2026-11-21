@@ -1,6 +1,3 @@
-// Shapes of the invoice flow: the file that comes in, what the extractor reads from it, the
-// analysis returned for review, the confirmation that finally touches the inventory, and the
-// history of confirmed invoices.
 using System.ComponentModel.DataAnnotations;
 using BgInventario.Core.Common;
 using BgInventario.Core.Entities;
@@ -8,9 +5,6 @@ using BgInventario.Core.Features.Suppliers;
 
 namespace BgInventario.Core.Features.Invoices;
 
-// ---------- Extraction (implemented in Infrastructure) ----------
-
-/// <summary>Reads an invoice of any layout and returns its data. The implementation uses an LLM.</summary>
 public interface IInvoiceExtractor
 {
     Task<Result<ExtractedInvoice>> ExtractAsync(InvoiceDocument document, CancellationToken ct);
@@ -24,9 +18,10 @@ public enum InvoiceFileType
     Webp
 }
 
-/// <summary>An uploaded invoice whose type was checked by its content, not by its name.</summary>
 public sealed record InvoiceDocument(byte[] Content, InvoiceFileType Type)
 {
+    public bool IsImage => Type != InvoiceFileType.Pdf;
+
     public string MediaType => Type switch
     {
         InvoiceFileType.Pdf => "application/pdf",
@@ -45,7 +40,6 @@ public sealed record InvoiceDocument(byte[] Content, InvoiceFileType Type)
     // A WebP file is a RIFF container: "RIFF", 4 bytes of size, then "WEBP".
     private const int WebpSignatureOffset = 8;
 
-    /// <summary>Type of the file by its first bytes; null when it is not a supported format.</summary>
     public static InvoiceFileType? DetectType(ReadOnlySpan<byte> content)
     {
         if (content.StartsWith(PdfSignature))
@@ -70,7 +64,6 @@ public sealed record InvoiceDocument(byte[] Content, InvoiceFileType Type)
     }
 }
 
-/// <summary>What the invoice says, without interpretation. Missing data stays null.</summary>
 public sealed record ExtractedInvoice(
     string? InvoiceNumber,
     DateOnly? IssueDate,
@@ -78,7 +71,6 @@ public sealed record ExtractedInvoice(
     decimal? Subtotal,
     decimal? Total,
     IReadOnlyList<ExtractedInvoiceLine> Lines,
-    // Doubts found while reading (a page read as an image, a number not found in the text...).
     IReadOnlyList<string> Warnings);
 
 public sealed record ExtractedInvoiceLine(
@@ -87,24 +79,14 @@ public sealed record ExtractedInvoiceLine(
     decimal Quantity,
     decimal UnitPrice);
 
-// ---------- Analysis (nothing is saved) ----------
-
 public enum LineMatchStatus
 {
-    /// <summary>Identified by a code or a confirmed equivalence; preselected.</summary>
     Matched,
-
-    /// <summary>The best candidate is textually close; the user confirms it.</summary>
     Suggested,
-
-    /// <summary>Only weak candidates; the user must check them.</summary>
     NeedsReview,
-
-    /// <summary>The description says too little or nothing resembles it; the user identifies the product.</summary>
     Manual
 }
 
-/// <summary>Why a line is <see cref="LineMatchStatus.Matched"/>.</summary>
 public enum MatchedBy
 {
     SupplierItemCode,
@@ -112,7 +94,6 @@ public enum MatchedBy
     Description
 }
 
-/// <summary>A possible product for a line. Score goes from 0 to 1 (1 = known equivalence).</summary>
 public sealed record ProductCandidate(int ProductId, string Code, string Name, double Score);
 
 /// <summary>Candidates come best first; for Matched lines the first one is the identified product.</summary>
@@ -120,19 +101,11 @@ public sealed record LineMatch(LineMatchStatus Status, MatchedBy? MatchedBy, IRe
 
 public sealed record AnalyzedInvoiceLine(int LineNumber, ExtractedInvoiceLine Extracted, LineMatch Match);
 
-/// <summary>Whether the issuer printed on the invoice is the supplier the user chose.</summary>
 public enum IssuerCheck
 {
-    /// <summary>The invoice was issued by the chosen supplier.</summary>
     Matches,
-
-    /// <summary>The issuer could not be read; there is nothing to compare.</summary>
     NotRead,
-
-    /// <summary>The issuer is another registered supplier (see <see cref="InvoiceAnalysis.SuggestedSupplier"/>).</summary>
     OtherSupplier,
-
-    /// <summary>The issuer is not a registered supplier.</summary>
     NotRegistered
 }
 
@@ -145,17 +118,13 @@ public sealed record InvoiceAnalysis(
     int SupplierId,
     string? InvoiceNumber,
     DateOnly? IssueDate,
-    // The issuer as printed on the invoice.
     string? SupplierName,
     IssuerCheck IssuerCheck,
-    // The registered supplier that matches the issuer, when it is not the chosen one.
     SupplierLookup? SuggestedSupplier,
     decimal? Subtotal,
     decimal? Total,
     IReadOnlyList<AnalyzedInvoiceLine> Lines,
     IReadOnlyList<string> Warnings);
-
-// ---------- Confirmation (the only step that writes) ----------
 
 /// <summary>
 /// Lines already reviewed by the user, each one with the product it really is. The invoice file
@@ -170,33 +139,25 @@ public sealed record ConfirmInvoiceRequest(
     [property: Range(typeof(decimal), "0", InvoiceReceiptLimits.MaxAmount)] decimal? InvoiceTotal,
     [property: Required] InvoiceFileUpload File,
     [property: Required, MinLength(1)] IReadOnlyList<ConfirmInvoiceLineRequest> Lines,
-    // The user was told the invoice is already registered and wants to register it again:
-    // its stock is added to the existing lots and the history keeps both records.
     bool RegisterAgain = false);
 
-/// <summary>The analyzed file. Its type is not sent: the service detects it from the content.</summary>
 public sealed record InvoiceFileUpload(
     [property: Required, StringLength(InvoiceReceiptLimits.FileNameMaxLength)] string FileName,
     [property: Required] byte[] Content);
 
 public sealed record ConfirmInvoiceLineRequest(
     [property: Range(1, int.MaxValue)] int ProductId,
-    // The description as it came in the invoice: it is what the next invoice will be matched against.
-    [property: Required, StringLength(SupplierProductAliasLimits.DescriptionMaxLength)] string Description,
+    [property: Required, StringLength(SupplierProductAliasLimits.DescriptionMaxLength)] string OriginalDescription,
     [property: StringLength(SupplierProductAliasLimits.SupplierItemCodeMaxLength)] string? SupplierItemCode,
     [property: Range(1, int.MaxValue)] int Quantity,
     [property: Range(InventoryLotLimits.MinPrice, InventoryLotLimits.MaxPrice)] decimal UnitPrice,
-    // The user created the product while reviewing this invoice. Only a label for the history.
     bool ProductCreated = false);
 
 public sealed record ConfirmedInvoice(
     int ReceiptId, string LotNumber, int ProductsReceived, int UnitsReceived, int AliasesSaved);
 
-// ---------- History of confirmed invoices ----------
-
 public sealed record InvoiceReceiptQuery : PageQuery
 {
-    /// <summary>Part of the invoice number or of the supplier name.</summary>
     public string? Search { get; init; }
 }
 
@@ -214,7 +175,6 @@ public sealed record InvoiceReceiptItem(
 
 public sealed record InvoiceReceiptLineItem(
     int LineNumber,
-    // As the invoice wrote it, and the product it was mapped to.
     string Description,
     string? SupplierItemCode,
     int ProductId,
@@ -238,9 +198,6 @@ public sealed record InvoiceReceiptDetail(
 
 public sealed record InvoiceReceiptFile(string FileName, string ContentType, byte[] Content);
 
-// ---------- Errors ----------
-
-/// <summary>Errors of the invoice flow, shared with the extractor in Infrastructure.</summary>
 public static class InvoiceErrors
 {
     public static readonly ErrorDetail UnknownSupplier = ErrorDetail.Validation("invoice.unknown_supplier", "El proveedor no existe.");

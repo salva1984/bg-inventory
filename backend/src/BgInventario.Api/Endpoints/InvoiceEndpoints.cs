@@ -9,22 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BgInventario.Api.Endpoints;
 
-/// <summary>
-/// Stock reception from supplier invoices: analyze (read + propose products, saves nothing),
-/// confirm (registers the stock the user reviewed and records the invoice) and the history of
-/// confirmed invoices. They expose inventory decisions and supplier documents, so only Admin.
-/// </summary>
 public static class InvoiceEndpoints
 {
     // The file is read whole before knowing whether it is an invoice; the limit protects the
     // server's memory (InvoiceReceiptLimits.MaxFileBytes).
     private const long MaxFileBytes = InvoiceReceiptLimits.MaxFileBytes;
 
-    // Room for the multipart envelope (boundaries, headers, the supplier field) around the file.
     private const long MultipartOverheadBytes = 64 * 1024;
 
-    // The confirmation carries the file again as base64 (4 characters per 3 bytes) plus the lines.
-    // A line is a few hundred bytes, so 1 MB leaves room for thousands of them.
     private const long Base64BytesPerGroup = 4;
     private const long BinaryBytesPerGroup = 3;
     private const long MaxBase64FileBytes = (MaxFileBytes + BinaryBytesPerGroup - 1) / BinaryBytesPerGroup * Base64BytesPerGroup;
@@ -42,9 +34,7 @@ public static class InvoiceEndpoints
             .WithSummary("Lee una factura (PDF o imagen) y propone el producto de cada línea; no guarda nada")
             // The token travels in a header, not in a cookie, so a form post cannot be forged (no CSRF).
             .DisableAntiforgery()
-            // Kestrel stops reading a larger body instead of buffering it.
             .WithMetadata(new RequestSizeLimitAttribute(MaxFileBytes + MultipartOverheadBytes))
-            // Each analysis is a paid call to the model.
             .RequireRateLimiting(ServiceCollectionExtensions.InvoiceAnalysisRateLimit)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
@@ -85,7 +75,6 @@ public static class InvoiceEndpoints
     private static async Task<Results<Ok<ConfirmedInvoice>, ProblemHttpResult>> Confirm(
         ConfirmInvoiceRequest request, ClaimsPrincipal user, InvoiceService invoices, CancellationToken ct)
     {
-        // "sub" holds the user id we put in the token at login: the history records who confirmed.
         var userId = int.Parse(user.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await invoices.ConfirmAsync(request, userId, ct);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error!.ToProblem();

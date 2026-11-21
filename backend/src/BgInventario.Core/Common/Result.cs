@@ -1,4 +1,3 @@
-// Business errors as values (Result pattern) instead of exceptions.
 namespace BgInventario.Core.Common;
 
 public enum ErrorType
@@ -8,11 +7,9 @@ public enum ErrorType
     Conflict,
     Unauthorized,
 
-    /// <summary>A service the operation depends on is missing or down (e.g. the invoice AI model).</summary>
     Unavailable
 }
 
-/// <summary>Business error. The API maps <see cref="Type"/> to an HTTP status (ProblemDetails).</summary>
 public sealed record ErrorDetail(string Code, string Message, ErrorType Type)
 {
     public static ErrorDetail Validation(string code, string message) => new(code, message, ErrorType.Validation);
@@ -22,20 +19,13 @@ public sealed record ErrorDetail(string Code, string Message, ErrorType Type)
     public static ErrorDetail Unavailable(string code, string message) => new(code, message, ErrorType.Unavailable);
 }
 
-/// <summary>
-/// Result pattern: expected failures (not found, duplicates...) are values, not exceptions.
-/// Exceptions are reserved for truly unexpected errors (handled globally).
-/// </summary>
 public class Result
 {
-    // Private constructor to enforce the use of static factory methods.
     protected Result(ErrorDetail? error) => Error = error;
 
     public ErrorDetail? Error { get; }
-    // Indicates whether the operation was successful (no error).
     public bool IsSuccess => Error is null;
 
-    // Static factory methods for creating Result instances.
     public static Result Success() => new(null);
     public static Result Failure(ErrorDetail error) => new(error);
 
@@ -45,8 +35,6 @@ public class Result
 public sealed class Result<T> : Result
 {
     private readonly T? _value;
-    // Private constructor to enforce the use of static factory methods.
-    // Creates a sucessful result with a value, or a failed result with an error.
     private Result(T value) : base(null) => _value = value;
     private Result(ErrorDetail error) : base(error) { }
 

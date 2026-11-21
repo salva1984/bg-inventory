@@ -1,9 +1,9 @@
-/* Dos columnas: panel petróleo con la marca a la izquierda y el formulario a la derecha. */
+/* Dos columnas: panel azul marino con la marca a la izquierda y el formulario a la derecha. */
 .login-page {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   min-height: 100vh;
-  background: var(--background);
+  background: var(--canvas);
 }
 
 /* ---------- Panel de presentación ---------- */
@@ -12,7 +12,8 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 40px;
-  background: var(--primary);
+  /* Azul marino corporativo: la marca sin la intensidad del azul de acción. */
+  background: #0f2a52;
   color: var(--primary-foreground);
 }
 
@@ -21,9 +22,14 @@
   display: flex;
   flex-direction: column;
   align-self: center;
-  width: min(100%, 360px);
+  width: min(100%, 380px);
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 28px 24px 24px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
 }
 
 h1 {
@@ -42,7 +48,6 @@ mat-form-field {
 
 button[type='submit'] {
   margin-top: 4px;
-  height: 40px;
 }
 
 /* ---------- Pantallas pequeñas ---------- */

@@ -1,4 +1,3 @@
-// Request/response shapes of the login flow and the security ports implemented in Infrastructure.
 using System.ComponentModel.DataAnnotations;
 using BgInventario.Core.Entities;
 
@@ -14,13 +13,11 @@ public sealed record LoginResponse(string AccessToken, DateTime ExpiresAt, UserS
 
 public sealed record AccessToken(string Token, DateTime ExpiresAt);
 
-/// <summary>Issues access tokens (JWT in Infrastructure). Keeps Core free of token libraries.</summary>
 public interface ITokenService
 {
     AccessToken CreateToken(User user);
 }
 
-/// <summary>Hashes and verifies passwords (PBKDF2 in Infrastructure).</summary>
 public interface IPasswordHasher
 {
     string Hash(string password);

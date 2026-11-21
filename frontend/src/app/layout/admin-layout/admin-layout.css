@@ -14,10 +14,10 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   width: var(--sidebar-width);
   height: 100vh;
-  padding: 20px 16px;
+  padding: 16px 12px;
   background: var(--background);
   border-right: 1px solid var(--border);
 }
@@ -34,7 +34,7 @@
 /* ---------- Cuenta ---------- */
 /* La cuenta se separa de los enlaces con una línea; su interior lo define el componente. */
 .sidebar-account {
-  padding-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
@@ -43,10 +43,10 @@
 .content {
   flex: 1;
   min-width: 0;
-  max-width: 1280px;
+  max-width: 1440px;
   /* La barra lateral fija no ocupa espacio en el flujo, así que se reserva su ancho. */
   margin-left: var(--sidebar-width);
-  padding: 32px 32px 56px;
+  padding: 20px 24px 48px;
 }
 
 /* ---------- Pantallas pequeñas ---------- */

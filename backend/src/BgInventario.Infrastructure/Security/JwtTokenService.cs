@@ -9,7 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace BgInventario.Infrastructure.Security;
 
-/// <summary>"Jwt" configuration section. Validated at startup (ValidateOnStart).</summary>
 public sealed class JwtOptions
 {
     public const string SectionName = "Jwt";
@@ -21,7 +20,6 @@ public sealed class JwtOptions
     [Required] public string Issuer { get; init; } = "";
     [Required] public string Audience { get; init; } = "";
 
-    /// <summary>Signing key. Comes from env/Key Vault, never from the repo.</summary>
     [Required, MinLength(MinKeyLength)] public string Key { get; init; } = "";
 
     [Range(1, MaxExpirationMinutes)] public int ExpirationMinutes { get; init; } = 60;
@@ -29,7 +27,6 @@ public sealed class JwtOptions
     public SymmetricSecurityKey SigningKey => new(Encoding.UTF8.GetBytes(Key));
 }
 
-/// <summary>Issues the access token (JWT) returned by the login: who the user is and their role.</summary>
 public sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider clock) : ITokenService
 {
     private readonly JwtOptions _options = options.Value;

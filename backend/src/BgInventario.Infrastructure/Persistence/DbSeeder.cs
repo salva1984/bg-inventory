@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Infrastructure.Persistence;
 
-/// <summary>"Seed" configuration section. Passwords come from env vars; without one, that user is not created.</summary>
 public sealed class SeedOptions
 {
     public const string SectionName = "Seed";
@@ -16,17 +15,9 @@ public sealed class SeedOptions
     public string? ViewerPassword { get; init; }
     public bool SampleData { get; init; }
 
-    /// <summary>Extra products generated with Bogus on top of the fixed sample data; 0 disables them.</summary>
     public int SampleProductCount { get; init; }
 }
 
-/// <summary>
-/// Creates the users the login validates against (the challenge asks for users already in the database)
-/// and, optionally, the sample data of the challenge plus generated volume (<see cref="SampleDataGenerator"/>). Runs through EF Core's UseSeeding/UseAsyncSeeding
-/// after migrations; it is idempotent because it only inserts into empty tables.
-/// It also builds the search trigrams of products that have none (sample data, or products created
-/// before the invoice matching existed).
-/// </summary>
 internal static class DbSeeder
 {
     public static async Task SeedAsync(DbContext context, SeedOptions options, IPasswordHasher hasher, CancellationToken ct)
@@ -62,7 +53,6 @@ internal static class DbSeeder
 
         if (options.SampleData && !await db.Suppliers.AnyAsync(ct))
         {
-            // The challenge calls them "Proveedor A, B ... N"; here they get realistic names.
             var a = new Supplier { Name = "Tecnología del Guayas S.A.", ContactEmail = "ventas@tecnoguayas.ec", Phone = "042000001" };
             var b = new Supplier { Name = "Compudistribuciones del Litoral Cía. Ltda.", ContactEmail = "ventas@compulitoral.ec", Phone = "042000002" };
             var n = new Supplier { Name = "Electroimportadora Austral S.A.", ContactEmail = "ventas@electroaustral.com.ec", Phone = "042000003" };
@@ -79,7 +69,6 @@ internal static class DbSeeder
                 Product("MOU-INAL", "Mouse inalámbrico", null,
                     (a, "L-2026-03", 12.50m, 100)));
 
-            // Volume on top of the fixed data; the generated products also buy from the three fixed suppliers.
             if (options.SampleProductCount > 0)
             {
                 var generated = SampleDataGenerator.Generate(options.SampleProductCount, [a, b, n]);
@@ -93,10 +82,6 @@ internal static class DbSeeder
         await IndexProductsWithoutTrigramsAsync(db, ct);
     }
 
-    /// <summary>
-    /// ProductService keeps the trigrams in sync on every create and edit; this covers rows that
-    /// did not go through it. Once everything is indexed it is a single query that finds nothing.
-    /// </summary>
     private static async Task IndexProductsWithoutTrigramsAsync(AppDbContext db, CancellationToken ct)
     {
         var unindexed = await db.Products

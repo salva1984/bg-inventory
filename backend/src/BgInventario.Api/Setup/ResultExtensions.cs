@@ -3,10 +3,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace BgInventario.Api.Setup;
 
-/// <summary>
-/// Single place where business errors become HTTP responses (RFC 7807 ProblemDetails).
-/// The "code" extension lets the frontend react to a specific error without parsing the message.
-/// </summary>
 public static class ResultExtensions
 {
     public static ProblemHttpResult ToProblem(this ErrorDetail error) =>

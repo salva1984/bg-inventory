@@ -5,10 +5,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace BgInventario.Api.Endpoints;
 
-/// <summary>
-/// Supplier routes: any authenticated user can read, only Admin can write.
-/// Handlers just call the use case and map its Result to an HTTP response.
-/// </summary>
 public static class SupplierEndpoints
 {
     public static void MapSupplierEndpoints(this IEndpointRouteBuilder app)
@@ -22,7 +18,6 @@ public static class SupplierEndpoints
         group.MapGet("/{id:int}", GetById).WithSummary("Detalle de proveedor")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        // Write operations: same routes, with the Admin policy on top.
         var write = group.MapGroup("")
             .RequireAuthorization(ServiceCollectionExtensions.AdminPolicy)
             .ProducesValidationProblem()

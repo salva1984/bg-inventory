@@ -1,16 +1,9 @@
 namespace BgInventario.Infrastructure.Persistence;
 
-/// <summary>A kind of product the generator can create, with the USD price range that makes sense for it.</summary>
 internal sealed record SampleProductType(string Name, string CodePrefix, string Description, decimal MinPrice, decimal MaxPrice);
 
-/// <summary>A fictional distributor; its contact email is built on <see cref="EmailDomain"/>.</summary>
 internal sealed record SampleSupplier(string Name, string EmailDomain);
 
-/// <summary>
-/// Hand-curated vocabulary for the generated sample data. Bogus picks from these lists instead of using its
-/// own commerce generator, whose names ("Ergonómico Granito Silla") do not look like a tech store.
-/// Code prefixes avoid MON, SND, LAP, TEC and MOU, already used by the fixed products of the challenge.
-/// </summary>
 internal static class SampleCatalog
 {
     public static readonly SampleProductType[] ProductTypes =
@@ -53,8 +46,6 @@ internal static class SampleCatalog
         "JBL", "Xiaomi", "TP-Link", "Kingston", "Seagate", "Western Digital", "Canon", "Epson", "Apple", "Huawei"
     ];
 
-    // Solo uno: con los tres fijos del enunciado suman cuatro y, en la demo, se crea el quinto a mano.
-    // Pocos proveedores mantienen estrecha la matriz de precios, que crece una columna por proveedor.
     public static readonly SampleSupplier[] Suppliers =
     [
         new("Importadora Pichincha Tech S.A.", "pichinchatech.com.ec")

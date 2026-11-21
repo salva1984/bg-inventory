@@ -1,16 +1,9 @@
-// Database schema of each entity: column sizes, indexes, relationships and check constraints.
-// Sizes come from the *Limits constants shared with the request validation.
-//
-// Soft delete: products and suppliers are never removed, only stamped with DeletedAt. Each one has a
-// query filter that hides deleted rows, and its unique indexes only cover active rows, so a deleted
-// code or name can be reused.
 using BgInventario.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BgInventario.Infrastructure.Persistence;
 
-/// <summary>SQL filter of the unique indexes of soft-deletable entities: uniqueness only among active rows.</summary>
 file static class SoftDelete
 {
     public const string ActiveRowsOnly = "[DeletedAt] IS NULL";
@@ -50,8 +43,6 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         b.HasIndex(p => p.Code).IsUnique().HasFilter(SoftDelete.ActiveRowsOnly);
         b.HasIndex(p => p.Name); // the list is sorted and searched by name
 
-        // A soft-deleted product keeps its lots (hidden by the lot filter). The cascade only applies
-        // if a product row is purged directly in the database.
         b.HasMany(p => p.Lots)
             .WithOne(lot => lot.Product)
             .HasForeignKey(lot => lot.ProductId)
@@ -69,8 +60,6 @@ internal sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         b.HasQueryFilter(s => s.DeletedAt == null);
         b.HasIndex(s => s.Name).IsUnique().HasFilter(SoftDelete.ActiveRowsOnly);
 
-        // A lot always points to an existing supplier row; the service only soft-deletes suppliers
-        // without active inventory.
         b.HasMany(s => s.Lots)
             .WithOne(lot => lot.Supplier)
             .HasForeignKey(lot => lot.SupplierId)
@@ -82,7 +71,6 @@ internal sealed class InventoryLotConfiguration : IEntityTypeConfiguration<Inven
 {
     public void Configure(EntityTypeBuilder<InventoryLot> b)
     {
-        // Last line of defense if a value skips the API validation (scripts, other clients).
         b.ToTable("InventoryLots", t =>
         {
             t.HasCheckConstraint("CK_InventoryLots_Price", "[Price] > 0");
@@ -91,10 +79,8 @@ internal sealed class InventoryLotConfiguration : IEntityTypeConfiguration<Inven
         b.Property(lot => lot.LotNumber).IsRequired().HasMaxLength(InventoryLotLimits.LotNumberMaxLength);
         b.Property(lot => lot.Price).HasPrecision(InventoryLotLimits.PricePrecision, InventoryLotLimits.PriceScale);
 
-        // Lots of a deleted product (or supplier) disappear with it, also from totals and counts.
         b.HasQueryFilter(lot => lot.Product.DeletedAt == null && lot.Supplier.DeletedAt == null);
 
-        // One row per product + supplier + lot.
         b.HasIndex(lot => new { lot.ProductId, lot.SupplierId, lot.LotNumber }).IsUnique();
         b.HasIndex(lot => lot.SupplierId);
     }
@@ -111,10 +97,8 @@ internal sealed class ProductTrigramConfiguration : IEntityTypeConfiguration<Pro
             .HasMaxLength(ProductTrigramLimits.TrigramLength)
             .UseCollation(Collations.Ordinal); // part of the key, built as a HashSet with ordinal comparison
 
-        // Used when a product's trigrams are refreshed or counted.
         b.HasIndex(t => t.ProductId);
 
-        // A deleted product stops being a candidate.
         b.HasQueryFilter(t => t.Product.DeletedAt == null);
 
         b.HasOne(t => t.Product)
@@ -134,14 +118,12 @@ internal sealed class SupplierProductAliasConfiguration : IEntityTypeConfigurati
             .UseCollation(Collations.Ordinal); // unique key, grouped in C# with ordinal comparison
         b.Property(a => a.SupplierItemCode).HasMaxLength(SupplierProductAliasLimits.SupplierItemCodeMaxLength);
 
-        // One product per supplier + description: confirming a different product replaces the equivalence.
         b.HasIndex(a => new { a.SupplierId, a.NormalizedDescription }).IsUnique();
 
         // Not unique: the same item code can arrive with different descriptions. The matcher only trusts
         // it when every alias with that code points to the same product.
         b.HasIndex(a => new { a.SupplierId, a.SupplierItemCode });
 
-        // Aliases of a deleted product or supplier are ignored, like their lots.
         b.HasQueryFilter(a => a.Product.DeletedAt == null && a.Supplier.DeletedAt == null);
 
         b.HasOne(a => a.Product)
@@ -167,7 +149,6 @@ internal sealed class InvoiceReceiptConfiguration : IEntityTypeConfiguration<Inv
         b.Property(r => r.FileName).HasMaxLength(InvoiceReceiptLimits.FileNameMaxLength);
         b.Property(r => r.FileContentType).HasMaxLength(InvoiceReceiptLimits.FileContentTypeMaxLength);
 
-        // The history is listed newest first.
         b.HasIndex(r => r.CreatedAt);
 
         // Not unique: an invoice can be registered again on purpose (see InvoiceService.ConfirmAsync),
@@ -205,7 +186,6 @@ internal sealed class InvoiceReceiptLineConfiguration : IEntityTypeConfiguration
         b.Property(line => line.ProductName).HasMaxLength(ProductLimits.NameMaxLength);
         b.Property(line => line.UnitPrice).HasPrecision(InventoryLotLimits.PricePrecision, InventoryLotLimits.PriceScale);
 
-        // Without navigation (see InvoiceReceipt). Restrict: the history keeps its products.
         b.HasOne<Product>()
             .WithMany()
             .HasForeignKey(line => line.ProductId)

@@ -15,12 +15,13 @@
 }
 
 .name {
-  font-weight: 700;
-  font-size: 20px;
+  font-weight: 600;
+  font-size: 18px;
   line-height: 1;
+  letter-spacing: -0.01em;
 }
 
-/* Variante sobre fondo petróleo (panel del login): el icono se invierte. */
+/* Variante sobre fondo azul (panel del login): el icono se invierte. */
 :host(.inverse) .mark {
   background: var(--primary-foreground);
   color: var(--primary);

@@ -1,5 +1,3 @@
-// Request/response shapes of the product endpoints. Validation attributes run automatically
-// before the endpoint (built-in Minimal API validation in .NET 10), including nested lots.
 using System.ComponentModel.DataAnnotations;
 using BgInventario.Core.Common;
 using BgInventario.Core.Entities;
@@ -17,14 +15,12 @@ public enum ProductSortBy
 
 public sealed record ProductQuery : PageQuery
 {
-    /// <summary>Searches by code or name.</summary>
     public string? Search { get; init; }
     public int? SupplierId { get; init; }
     public ProductSortBy? SortBy { get; init; }
     public bool? Descending { get; init; }
 }
 
-/// <summary>Row of the product list: totals over all its inventory lots.</summary>
 public sealed record ProductListItem(
     int Id,
     string Code,
@@ -61,14 +57,12 @@ public sealed record SaveProductRequest(
     IReadOnlyList<SaveInventoryLotRequest>? Lots);
 
 public sealed record SaveInventoryLotRequest(
-    // Existing lot id when updating; null for a new lot.
     int? Id,
     [property: Range(1, int.MaxValue)] int SupplierId,
     [property: Required, StringLength(InventoryLotLimits.LotNumberMaxLength)] string LotNumber,
     [property: Range(InventoryLotLimits.MinPrice, InventoryLotLimits.MaxPrice)] decimal Price,
     [property: Range(0, int.MaxValue)] int Stock);
 
-// Price matrix: the "Producto | Precio Proveedor A | Precio Proveedor B ..." table of the challenge.
 public sealed record PriceMatrix(
     IReadOnlyList<PriceMatrixSupplier> Suppliers,
     PagedResult<PriceMatrixRow> Products);

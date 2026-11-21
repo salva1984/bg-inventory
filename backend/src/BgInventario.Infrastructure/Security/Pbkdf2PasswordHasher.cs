@@ -4,7 +4,6 @@ using IPasswordHasher = BgInventario.Core.Features.Auth.IPasswordHasher;
 
 namespace BgInventario.Infrastructure.Security;
 
-// nuestra implementación de PasswordHasher 
 public sealed class Pbkdf2PasswordHasher : IPasswordHasher
 {
     private readonly PasswordHasher<User> _hasher = new();

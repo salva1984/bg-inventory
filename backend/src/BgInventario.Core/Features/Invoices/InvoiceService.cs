@@ -8,19 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Invoices;
 
-/// <summary>
-/// Receiving stock from supplier invoices, in two steps:
-///
-/// - Analyze: reads the invoice (whatever its layout) and proposes a product for each line.
-///   Nothing is saved: a wrong association is an inventory integrity problem, so the user reviews first.
-/// - Confirm: with the products chosen by the user, registers the stock, remembers how the
-///   supplier names each product (so the next invoice is recognized without guessing) and keeps
-///   a record of the invoice with its file for the history.
-///
-/// An invoice already registered is rejected unless the user explicitly asks to register it again
-/// (the demo reuses the same files): then its stock is added to the same lots and the history
-/// keeps one record per registration.
-/// </summary>
 public sealed class InvoiceService(
     IAppDbContext db,
     IInvoiceExtractor extractor,
@@ -28,7 +15,6 @@ public sealed class InvoiceService(
     TimeProvider clock,
     DashboardCache dashboardCache)
 {
-    // Difference allowed between the sum of the lines and the subtotal: rounding of each line.
     internal const decimal SubtotalTolerance = 0.05m;
 
     // Largest values a confirmed line accepts (see ConfirmInvoiceLineRequest): the stock is an int
@@ -92,12 +78,8 @@ public sealed class InvoiceService(
     }
 
     /// <summary>
-    /// Compares the issuer read from the invoice with the chosen supplier. It never changes the choice:
-    /// it only reports the mismatch and, if the issuer is another registered supplier, which one.
-    ///
     /// The issuer is the registered supplier whose name is most similar, not just any name above the
-    /// threshold: "Distribuidora Andina S.A." and "Distribuidora del Pacífico S.A." share most words,
-    /// so a fixed threshold alone would take one for the other.
+    /// threshold: "Distribuidora Andina S.A." and "Distribuidora del Pacífico S.A." share most words.
     /// </summary>
     private async Task<(IssuerCheck Check, SupplierLookup? Suggested)> CheckIssuerAsync(
         int supplierId, string? issuerName, CancellationToken ct)
@@ -107,15 +89,13 @@ public sealed class InvoiceService(
             return (IssuerCheck.NotRead, null);
         }
 
-        // Suppliers are a short list (the lookup endpoint already returns all of them), so their
-        // names are compared in memory.
         var suppliers = await db.Suppliers.AsNoTracking()
             .Select(s => new SupplierLookup(s.Id, s.Name))
             .ToListAsync(ct);
 
         // On a tie the chosen supplier wins: the user's choice is only questioned with a reason.
         var mostSimilar = suppliers
-            .Select(s => (Supplier: s, Similarity: ProductSearchIndex.Similarity(s.Name, issuerName)))
+            .Select(s => (Supplier: s, Similarity: ProductSearchIndex.TrigramsSimilarity(s.Name, issuerName)))
             .OrderByDescending(candidate => candidate.Similarity)
             .ThenByDescending(candidate => candidate.Supplier.Id == supplierId)
             .First();
@@ -132,12 +112,6 @@ public sealed class InvoiceService(
             : (IssuerCheck.OtherSupplier, mostSimilar.Supplier);
     }
 
-    /// <summary>
-    /// Registers the received stock in one lot per product, numbered with the invoice number,
-    /// saves the confirmed equivalences and records the invoice (file and lines) for the history.
-    /// Everything goes in a single SaveChanges, so it is atomic: either the whole invoice is
-    /// registered or nothing is.
-    /// </summary>
     public async Task<Result<ConfirmedInvoice>> ConfirmAsync(
         ConfirmInvoiceRequest request, int userId, CancellationToken ct)
     {
@@ -150,7 +124,6 @@ public sealed class InvoiceService(
             return InvoiceErrors.QuantityTooLarge;
         }
 
-        // The same checks as the analysis: the file kept in the history must be the invoice itself.
         var file = request.File;
         var exceedsFileLimit = file.Content.Length > InvoiceReceiptLimits.MaxFileBytes;
         if (exceedsFileLimit)
@@ -223,10 +196,6 @@ public sealed class InvoiceService(
         return new ConfirmedInvoice(receipt.Id, lotNumber, receivedStock.Count, unitsReceived, aliasesSaved);
     }
 
-    /// <summary>
-    /// The history record of the invoice: one line per confirmed line (not merged by product like
-    /// the lots), with the description as the invoice wrote it and the product it was mapped to.
-    /// </summary>
     private static InvoiceReceipt ToReceipt(
         ConfirmInvoiceRequest request,
         string supplierName,
@@ -241,12 +210,11 @@ public sealed class InvoiceService(
             .Select((line, index) =>
             {
                 var product = productsById[line.ProductId];
-                // As the invoice wrote it; the alias keeps the normalized code for matching.
                 var itemCode = string.IsNullOrWhiteSpace(line.SupplierItemCode) ? null : line.SupplierItemCode.Trim();
                 return new InvoiceReceiptLine
                 {
                     LineNumber = index + 1,
-                    Description = line.Description.Trim(),
+                    Description = line.OriginalDescription.Trim(),
                     SupplierItemCode = itemCode,
                     ProductId = product.Id,
                     ProductCode = product.Code,
@@ -277,13 +245,8 @@ public sealed class InvoiceService(
         };
     }
 
-    /// <summary>Units and amount received of one product, summed over the invoice lines.</summary>
     private sealed record ReceivedStock(int ProductId, int Quantity, decimal Amount);
 
-    /// <summary>
-    /// One entry per product. An invoice can list the same product in two lines (e.g. two prices
-    /// or a promotion); they are summed so the product's lot gets a single average price.
-    /// </summary>
     private static List<ReceivedStock> SumByProduct(IReadOnlyList<ConfirmInvoiceLineRequest> lines) =>
         lines
             .GroupBy(line => line.ProductId)
@@ -329,17 +292,12 @@ public sealed class InvoiceService(
     private static decimal RoundPrice(decimal price) =>
         Math.Round(price, InventoryLotLimits.PriceScale, MidpointRounding.AwayFromZero);
 
-    /// <summary>
-    /// Creates or updates the supplier's alias for each confirmed description. If the user chose a
-    /// different product than the stored alias, the alias is corrected: the last confirmation wins.
-    /// Returns how many aliases were saved.
-    /// </summary>
     private async Task<int> SaveAliasesAsync(
         int supplierId, IReadOnlyList<ConfirmInvoiceLineRequest> lines, CancellationToken ct)
     {
         // One alias per normalized description; a description made only of symbols cannot be matched again.
         var confirmedByDescription = lines
-            .Select(line => (Line: line, Key: ProductSearchIndex.Normalize(line.Description)))
+            .Select(line => (Line: line, Key: ProductSearchIndex.Normalize(line.OriginalDescription)))
             .Where(item => item.Key.Length > 0)
             .GroupBy(item => item.Key)
             .ToDictionary(group => group.Key, group => group.Last().Line);
@@ -354,7 +312,7 @@ public sealed class InvoiceService(
 
         foreach (var (key, line) in confirmedByDescription)
         {
-            var description = line.Description.Trim();
+            var description = line.OriginalDescription.Trim();
             var itemCode = InvoiceLineMatcher.NormalizeItemCode(line.SupplierItemCode);
 
             if (existingByKey.TryGetValue(key, out var alias))
@@ -401,10 +359,6 @@ public sealed class InvoiceService(
             .AnyAsync(lot => lot.SupplierId == supplierId && lot.LotNumber == lotNumber, ct);
     }
 
-    /// <summary>
-    /// Checks that do not need the database: what the user should look at before confirming.
-    /// They are warnings, not errors, because the user can fix the values in the review.
-    /// </summary>
     internal static List<string> ReviewAmounts(ExtractedInvoice invoice)
     {
         var warnings = new List<string>();

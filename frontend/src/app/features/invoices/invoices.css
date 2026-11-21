@@ -1,15 +1,23 @@
 /* Recepción de facturas: un panel por paso y la tabla de revisión con campos en las celdas. */
 
+/* Cada paso es un módulo: filete, regla azul arriba y el título como barra a todo el ancho. */
 .panel {
-  margin-bottom: 16px;
-  padding: 18px 20px;
+  margin-bottom: 12px;
+  padding: 0 16px 14px;
   background: var(--background);
   border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
 }
+/* La barra de título sigue las esquinas superiores del módulo (descontando la regla de 2px). */
 .panel-title {
-  margin-bottom: 14px;
-  font-size: 18px;
+  margin: 0 -16px 12px;
+  padding: 9px 16px;
+  border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
+  background: var(--module-header);
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
 }
 
 /* ---------- Paso 1 ---------- */
@@ -30,6 +38,10 @@
   min-width: 0;
   margin-right: auto;
 }
+/* El botón conserva su ancho; el nombre del archivo es el que se recorta. */
+.file-field button {
+  flex: none;
+}
 .file-name {
   overflow: hidden;
   color: var(--muted-foreground);
@@ -40,16 +52,16 @@
 /* ---------- Paso 2: el emisor no es el proveedor elegido ---------- */
 /* Ámbar con borde: es una decisión pendiente, no un error, y bloquea el registro hasta resolverla. */
 .issuer-alert {
-  margin-bottom: 16px;
-  padding: 16px 20px;
-  border: 1px solid var(--warning);
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius);
   background: var(--warning-soft);
   color: var(--warning);
 }
 .issuer-alert h2 {
-  margin-bottom: 8px;
-  font-size: 18px;
+  margin-bottom: 6px;
+  font-size: 16px;
 }
 .issuer-alert p {
   max-width: 80ch;
@@ -63,6 +75,7 @@
 }
 /* Una vez decidido queda como recordatorio discreto, sin bloquear. */
 .issuer-note {
+  border-color: var(--warning-border);
   background: var(--warning-soft);
   color: var(--warning);
 }
@@ -85,7 +98,8 @@
 }
 .invoice-summary dt {
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
 }
 .invoice-summary dd {
   margin: 0;
@@ -94,8 +108,9 @@
 
 /* Advertencias de la lectura: ámbar, el color de lo que hay que mirar dos veces. */
 .warnings {
-  margin: 16px 0 0;
-  padding: 10px 14px 10px 32px;
+  margin: 14px 0 0;
+  padding: 8px 12px 8px 30px;
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-sm);
   background: var(--warning-soft);
   color: var(--warning);
@@ -105,14 +120,22 @@
 }
 
 /* ---------- Paso 2: factura original ---------- */
+/* En este paso la barra del módulo lleva además el archivo y sus botones. */
 .original-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
+  margin: 0 -16px;
+  padding: 4px 16px;
+  border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
+  background: var(--module-header);
+  border-bottom: 1px solid var(--border);
 }
 .original-heading .panel-title {
-  margin-bottom: 0;
+  margin: 0;
+  padding: 5px 0;
+  border: 0;
 }
 .original-heading .file-name {
   min-width: 0;
@@ -121,7 +144,7 @@
 /* Alto fijo con desplazamiento propio: la página no salta al mostrarla y la tabla queda a la vista. */
 .original-viewer {
   height: 75vh;
-  margin-top: 14px;
+  margin-top: 12px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -152,6 +175,15 @@ table.review {
 .review td {
   vertical-align: top;
 }
+/*
+ * Los detalles de la fila (origen del reconocimiento, número de línea y código) pueden saltar
+ * de línea: la columna Estado es angosta y, sin esto, "Por el código del proveedor" invade la
+ * columna Producto.
+ */
+.review .detail {
+  margin-top: 2px;
+  white-space: normal;
+}
 /* Una línea excluida queda visible pero apagada, para poder volver a incluirla. */
 .review tr.excluded td {
   color: var(--muted-foreground);
@@ -165,7 +197,7 @@ table.review {
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 @media (max-width: 700px) {

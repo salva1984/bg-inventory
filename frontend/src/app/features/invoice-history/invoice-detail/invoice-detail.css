@@ -8,7 +8,8 @@
 }
 .receipt-summary dt {
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
 }
 .receipt-summary dd {
   margin: 0;

@@ -6,17 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Suppliers;
 
-/// <summary>
-/// Supplier use cases: listing, CRUD and the business rules (unique name, cannot delete if in use).
-/// Every successful write invalidates the dashboard summary, which shows supplier count and names.
-/// </summary>
 public sealed class SupplierService(IAppDbContext db, TimeProvider clock, DashboardCache dashboardCache)
 {
     public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("supplier.not_found", "El proveedor no existe.");
     public static readonly ErrorDetail DuplicateName = ErrorDetail.Conflict("supplier.duplicate_name", "Ya existe un proveedor con ese nombre.");
     public static readonly ErrorDetail InUse = ErrorDetail.Conflict("supplier.in_use", "No se puede eliminar: el proveedor tiene productos asociados.");
 
-    // Shared projection (translated to SQL): ProductCount counts distinct products, not lots.
     private static readonly Expression<Func<Supplier, SupplierItem>> ToItem = s => new SupplierItem(
         s.Id,
         s.Name,
@@ -108,7 +103,6 @@ public sealed class SupplierService(IAppDbContext db, TimeProvider clock, Dashbo
             return InUse;
         }
 
-        // Soft delete: the row stays for history and the query filter hides it from now on.
         supplier.DeletedAt = clock.GetUtcNow().UtcDateTime;
         await db.SaveChangesAsync(ct);
         await dashboardCache.InvalidateAsync(ct);

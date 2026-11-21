@@ -1,7 +1,5 @@
-// Composition root of the API: wires the layers and defines the HTTP pipeline.
-// The order of the middlewares matters: errors → logging → CORS → auth → rate limit → endpoints.
-// The rate limiter goes after auth so its per-user partitions see the signed-in user, and a
-// request without a valid token is rejected (401) before it spends anyone's quota.
+// The order of the middlewares matters: the rate limiter goes after auth so it sees the signed-in user,
+// and a request without a valid token is rejected before it spends anyone's quota.
 using BgInventario.Api.Endpoints;
 using BgInventario.Api.Setup;
 using BgInventario.Core;
@@ -17,9 +15,6 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Levels and the console sink come from appsettings. The OTLP sink is added here so it shares
-    // the service name with traces; its endpoint comes from OTEL_EXPORTER_OTLP_ENDPOINT
-    // (default http://localhost:4317), the same one the trace exporter uses.
     builder.Services.AddSerilog((services, config) => config
         .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services)
@@ -28,7 +23,6 @@ try
             ["service.name"] = ServiceCollectionExtensions.ServiceName
         }));
 
-    // add our services
     builder.Services
         .AddCore()
         .AddInfrastructure(builder.Configuration)

@@ -21,3 +21,9 @@ dist/
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+.claude/
+.codex/
+.github/
+.agents/
+.opencode/
+.impecabble/

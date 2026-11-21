@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 namespace BgInventario.Core.Features.Auth;
 
-/// <summary>Login by email and password, and lookup of the signed-in user.</summary>
 public sealed class AuthService(
     IAppDbContext db,
     IPasswordHasher passwordHasher,
@@ -16,11 +15,10 @@ public sealed class AuthService(
 
     public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
     {
-        // Emails are stored lowercase, so normalizing here makes the lookup case-insensitive.
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
 
-        // mismo error para evitar enumeracion de usuarios
+        // Same error for an unknown email and a wrong password: avoids user enumeration.
         if (user is null || !passwordHasher.Verify(user.PasswordHash, request.Password))
         {
             logger.LogWarning("Failed login attempt for {Email}", email);

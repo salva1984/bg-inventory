@@ -3,14 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Dashboard;
 
-/// <summary>
-/// Business summary for the dashboard. Every number is an aggregate computed by the database
-/// (GROUP BY / SUM / COUNT); the result is kept in <see cref="DashboardCache"/> until a product
-/// or supplier changes. Deleted products and their lots are left out by the global soft-delete filter.
-/// </summary>
 public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
 {
-    // Length of the ranked lists: enough to act on, short enough to read at a glance.
     private const int TopSuppliers = 8;
     private const int TopProducts = 5;
 
@@ -31,7 +25,6 @@ public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
     {
         var productCount = await db.Products.CountAsync(ct);
         var supplierCount = await db.Suppliers.CountAsync(ct);
-        // A product without lots also counts as out of stock: there is nothing to sell.
         var outOfStockCount = await db.Products.CountAsync(p => (p.Lots.Sum(lot => (int?)lot.Stock) ?? 0) == 0, ct);
         // long: the sum of many int stocks can exceed int.MaxValue.
         var totalUnits = await db.InventoryLots.SumAsync(lot => (long)lot.Stock, ct);
@@ -79,7 +72,6 @@ public sealed class DashboardService(IAppDbContext db, DashboardCache cache)
 
     private async Task<List<PriceSpreadProduct>> GetLargestPriceSpreadAsync(CancellationToken ct)
     {
-        // Lowest and highest price per product, only where the price actually varies.
         var priceRanges = db.Products.AsNoTracking()
             .Where(p => p.Lots.Count >= 2)
             .Select(p => new

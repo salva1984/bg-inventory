@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace BgInventario.Api.Endpoints;
 
-/// <summary>Business summary of the inventory. Any authenticated user can read it.</summary>
 public static class DashboardEndpoints
 {
     public static void MapDashboardEndpoints(this IEndpointRouteBuilder app)

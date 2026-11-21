@@ -18,7 +18,7 @@ fieldset {
   margin-bottom: 8px;
   padding: 10px 12px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--muted);
 }
 .lot-title {

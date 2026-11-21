@@ -1,4 +1,3 @@
-// EF Core implementation of IAppDbContext: the only class that knows about SQL Server tables.
 using BgInventario.Core.Common;
 using BgInventario.Core.Entities;
 using Microsoft.EntityFrameworkCore;

@@ -5,12 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Products;
 
-/// <summary>
-/// Product use cases: listing, price matrix and CRUD. A product is saved together with its
-/// inventory lots (price and stock per supplier/lot) because the form edits them as one unit.
-/// Every successful write invalidates the dashboard summary, which is built from products and lots.
-/// Creating or editing also refreshes the product's search trigrams (<see cref="ProductSearchIndex"/>).
-/// </summary>
 public sealed class ProductService(IAppDbContext db, TimeProvider clock, DashboardCache dashboardCache)
 {
     public static readonly ErrorDetail NotFound = ErrorDetail.NotFound("product.not_found", "El producto no existe.");
@@ -24,8 +18,6 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
         var products = ApplyProductQuery(query);
         var sorted = SortProducts(products, query.SortBy ?? ProductSortBy.Name, query.Descending ?? false);
 
-        // Projection straight to the DTO: SQL selects only these columns and computes
-        // the totals on the server (no entity tracking, no N+1).
         var items = sorted.Select(p => new ProductListItem(
             p.Id,
             p.Code,
@@ -42,7 +34,6 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
     public async Task<PriceMatrix> GetPriceMatrixAsync(ProductQuery query, CancellationToken ct)
     {
-        // Same ordering as the product list; the matrix UI only offers name, ascending or descending.
         var products = ApplyProductQuery(query);
         var sorted = SortProducts(products, query.SortBy ?? ProductSortBy.Name, query.Descending ?? false);
 
@@ -52,7 +43,6 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
         var cells = await GetMatrixCellsAsync([.. productPageResult.Items.Select(p => p.Id)], ct);
 
-        // Matrix columns: every supplier, so the columns are the same on every page and filter.
         var suppliers = await db.Suppliers.AsNoTracking()
             .OrderBy(s => s.Name)
             .Select(s => new PriceMatrixSupplier(s.Id, s.Name))
@@ -161,8 +151,6 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
     public async Task<Result> DeleteAsync(int id, CancellationToken ct)
     {
-        // Soft delete in a single UPDATE. The query filter skips products already deleted (so a
-        // second delete is NotFound) and, from now on, hides the product and its lots.
         var now = clock.GetUtcNow().UtcDateTime;
         var deletedRows = await db.Products
             .Where(p => p.Id == id)
@@ -217,12 +205,10 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
     private sealed record MatrixCell(int ProductId, int SupplierId, string SupplierName, PriceMatrixCell Cell);
 
-    /// <summary>One grouped query for every cell of the page, instead of loading every lot row.</summary>
     private async Task<List<MatrixCell>> GetMatrixCellsAsync(List<int> productIds, CancellationToken ct)
     {
         var groups = await db.InventoryLots.AsNoTracking()
             .Where(lot => productIds.Contains(lot.ProductId))
-            // Group by product and supplier, so we can compute the lowest price and total stock per supplier.
             .GroupBy(lot => new { lot.ProductId, lot.SupplierId, SupplierName = lot.Supplier.Name })
             .Select(g => new
             {
@@ -244,11 +230,9 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
             .ToList();
     }
 
-    /// <summary>Business rules of the submitted lots, checked before touching the product.</summary>
     private async Task<Result> ValidateLotsAsync(
         IReadOnlyList<SaveInventoryLotRequest> lots, IReadOnlySet<int> existingLotIds, CancellationToken ct)
     {
-        // The same supplier + lot twice would violate the unique index; report it as a clear message.
         var hasRepeatedLot = lots
             .GroupBy(lot => (lot.SupplierId, LotNumber: NormalizeLot(lot.LotNumber)))
             .Any(group => group.Count() > 1);
@@ -270,7 +254,6 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
         return allSuppliersExist ? Result.Success() : UnknownSupplier;
     }
 
-    /// <summary>Makes the product's lots match the request: updates the ones sent with id, adds the new ones, removes the rest.</summary>
     private static void SyncLots(Product product, IReadOnlyList<SaveInventoryLotRequest> lots)
     {
         var requestedById = lots.Where(lot => lot.Id is not null).ToDictionary(lot => lot.Id!.Value);

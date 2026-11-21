@@ -16,9 +16,6 @@ using OpenTelemetry.Trace;
 
 namespace BgInventario.Api.Setup;
 
-/// <summary>
-/// JSON, validation, error format, CORS, JWT, rate limiting, Swagger, cache, health checks and telemetry.
-/// </summary>
 public static class ServiceCollectionExtensions
 {
     public const string CorsPolicy = "Frontend";
@@ -26,28 +23,22 @@ public static class ServiceCollectionExtensions
     public const string LoginRateLimit = "login";
     public const string InvoiceAnalysisRateLimit = "invoice-analysis";
 
-    // Name under which logs, traces and metrics appear in the dashboard (OTLP "service.name").
     public const string ServiceName = "BgInventario.Api";
 
-    // Brute-force protection: login attempts allowed per client IP in each window.
     public const int LoginAttemptsPerWindow = 5;
     private static readonly TimeSpan LoginWindow = TimeSpan.FromMinutes(1);
 
-    // Cost protection: invoice analyses (paid LLM calls) allowed per user in each window.
     public const int InvoiceAnalysesPerWindow = 10;
     private static readonly TimeSpan InvoiceAnalysisWindow = TimeSpan.FromMinutes(1);
 
-    // How long the browser may cache a CORS preflight answer before asking again.
     private static readonly TimeSpan PreflightCacheDuration = TimeSpan.FromMinutes(10);
 
-    // Tolerance for clock differences between the server that issues the token and the one that validates it.
     private static readonly TimeSpan TokenClockSkew = TimeSpan.FromSeconds(30);
 
     public static IServiceCollection AddApi(this IServiceCollection services, IConfiguration configuration)
     {
         services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-        // DataAnnotations on the request records
         services.AddValidation();
 
         services.AddProblemDetails();
@@ -58,8 +49,6 @@ public static class ServiceCollectionExtensions
         services.AddRateLimits();
         services.AddSwagger();
 
-        // In-memory cache behind HybridCache (used by the dashboard). Registering a distributed
-        // cache (AddStackExchangeRedisCache) later makes it shared between instances, no code change.
         services.AddHybridCache();
 
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
@@ -67,7 +56,6 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
 
     private static void AddCors(this IServiceCollection services, IConfiguration configuration)
     {
@@ -110,11 +98,8 @@ public static class ServiceCollectionExtensions
         var requireAuthPolicy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
             .Build();
-        // Any authenticated user can read; only Admin can write.
         services.AddAuthorizationBuilder()
-            //  every endpoint requires a token unless it declares AllowAnonymous.
             .SetFallbackPolicy(requireAuthPolicy)
-            // AdminPolicy is used in the endpoints that require an Admin role.
             .AddPolicy(AdminPolicy, p => p.RequireRole(nameof(UserRole.Admin)));
     }
 
@@ -122,7 +107,6 @@ public static class ServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            // One counter per client IP: one attacker cannot lock out every other user.
             options.AddPolicy(LoginRateLimit, httpContext => RateLimitPartition.GetFixedWindowLimiter(
                 httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _loginWindow => new FixedWindowRateLimiterOptions { 
@@ -139,9 +123,6 @@ public static class ServiceCollectionExtensions
                 }));
         });
 
-    // Traces (each request with its SQL queries) and metrics, exported over OTLP. The destination
-    // comes from OTEL_EXPORTER_OTLP_ENDPOINT (default http://localhost:4317); logs reach the same
-    // place through Serilog's OpenTelemetry sink.
     private static void AddTelemetry(this IServiceCollection services) =>
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService(ServiceName))
@@ -172,7 +153,6 @@ public static class ServiceCollectionExtensions
                 BearerFormat = "JWT",
                 Description = "Pegue solo el token (sin 'Bearer ')."
             });
-            // Swagger UI will send the token in the Authorization header for all requests.
             o.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = []

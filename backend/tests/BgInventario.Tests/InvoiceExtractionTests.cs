@@ -81,10 +81,9 @@ public sealed class PdfPageReaderTests
     [Fact]
     public void Text_page_is_rebuilt_in_visual_order_with_aligned_columns()
     {
-        var page = ReadPages(TestPdf.Invoice()).Value.Single();
+        var page = Assert.IsType<TextPage>(ReadPages(TestPdf.Invoice()).Value.Single());
 
-        Assert.Null(page.Image);
-        var lines = page.Text!.Split('\n');
+        var lines = page.Text.Split('\n');
         Assert.Equal(3, lines.Length);
         Assert.StartsWith("FACTURA", lines[0]);
         Assert.StartsWith("CANT", lines[1]);
@@ -96,9 +95,8 @@ public sealed class PdfPageReaderTests
     [Fact]
     public void Page_without_text_is_rendered_as_png()
     {
-        var page = ReadPages(TestPdf.Blank()).Value.Single();
+        var page = Assert.IsType<ScannedPage>(ReadPages(TestPdf.Blank()).Value.Single());
 
-        Assert.Null(page.Text);
         Assert.Equal(InvoiceFileType.Png, InvoiceDocument.DetectType(page.Image));
     }
 

@@ -1,6 +1,5 @@
-// Invoice extraction with an LLM through Microsoft.Extensions.AI (IChatClient). The model only
-// turns the document into JSON; matching products and touching the stock is deterministic code in Core.
 using System.ClientModel;
+using System.Diagnostics;
 using System.Globalization;
 using BgInventario.Core.Common;
 using BgInventario.Core.Features.Invoices;
@@ -9,7 +8,6 @@ using Microsoft.Extensions.Logging;
 
 namespace BgInventario.Infrastructure.Invoices;
 
-/// <summary>"InvoiceExtraction" configuration section. Any OpenAI-compatible endpoint works (OpenRouter by default).</summary>
 public sealed class InvoiceExtractionOptions
 {
     public const string SectionName = "InvoiceExtraction";
@@ -17,7 +15,6 @@ public sealed class InvoiceExtractionOptions
     public string Endpoint { get; init; } = "https://openrouter.ai/api/v1";
     public string Model { get; init; } = "openai/gpt-6-luna";
 
-    /// <summary>Secret; comes from an environment variable. Without it the analysis answers 503.</summary>
     public string? ApiKey { get; init; }
 
     public ReasoningEffort ReasoningEffort { get; init; } = ReasoningEffort.Medium;
@@ -28,10 +25,6 @@ public sealed class InvoiceExtractionOptions
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 }
 
-/// <summary>
-/// Sends the invoice to the model, page by page in the form it reads best (see <see cref="PdfPageReader"/>),
-/// and asks for a JSON with a fixed schema (structured output).
-/// </summary>
 internal sealed class LlmInvoiceExtractor(
     IChatClient chatClient, InvoiceExtractionOptions options, ILogger<LlmInvoiceExtractor> logger) : IInvoiceExtractor
 {
@@ -95,19 +88,24 @@ internal sealed class LlmInvoiceExtractor(
             warnings);
     }
 
-    /// <summary>
-    /// The message for the model: an image is sent as is; a PDF goes page by page, as text when it
-    /// has a usable text layer and as an image when it does not. Also returns the pages, to check
-    /// the answer against the text afterwards. A PDF over the reader's limits is rejected here.
-    /// </summary>
     private Result<(List<AIContent> Content, List<InvoicePage> Pages)> PrepareContent(InvoiceDocument document)
     {
-        if (document.Type != InvoiceFileType.Pdf)
+        if (document.IsImage)
         {
-            List<AIContent> image = [new DataContent(document.Content, document.MediaType)];
-            return (image, new List<InvoicePage>());
+            return HandleImage(document);
         }
 
+        return HandlePdf(document);
+    }
+
+    private static Result<(List<AIContent> Content, List<InvoicePage> Pages)> HandleImage(InvoiceDocument document)
+    {
+        List<AIContent> content = [new DataContent(document.Content, document.MediaType)];
+        return (content, new List<InvoicePage>());
+    }
+
+    private Result<(List<AIContent> Content, List<InvoicePage> Pages)> HandlePdf(InvoiceDocument document)
+    {
         Result<List<InvoicePage>> read;
         try
         {
@@ -126,22 +124,25 @@ internal sealed class LlmInvoiceExtractor(
         }
 
         var pages = read.Value;
-        var content = new List<AIContent>();
-        foreach (var page in pages)
-        {
-            if (page.Text is not null)
-            {
-                content.Add(new TextContent($"Página {page.Number} (texto):\n{page.Text}"));
-            }
-            else
-            {
-                content.Add(new TextContent($"Página {page.Number} (imagen):"));
-                content.Add(new DataContent(page.Image!, "image/png"));
-            }
-        }
-
+        var content = pages.SelectMany(ContentFor).ToList();
         return (content, pages);
     }
+
+    private static List<AIContent> ContentFor(InvoicePage page) => page switch
+    {
+        TextPage textPage => HandleTextPage(textPage),
+        ScannedPage scannedPage => HandleScannedPage(scannedPage),
+        _ => throw new UnreachableException($"Unknown page type: {page.GetType().Name}")
+    };
+
+    private static List<AIContent> HandleTextPage(TextPage page) =>
+        [new TextContent($"Página {page.Number} (texto):\n{page.Text}")];
+
+    private static List<AIContent> HandleScannedPage(ScannedPage page) =>
+    [
+        new TextContent($"Página {page.Number} (imagen):"),
+        new DataContent(page.Image, "image/png")
+    ];
 
     private async Task<Result<LlmInvoice>> AskModelAsync(List<AIContent> content, CancellationToken ct)
     {
@@ -157,7 +158,6 @@ internal sealed class LlmInvoiceExtractor(
 
         try
         {
-            // Structured output: the model must answer with the JSON schema of LlmInvoice.
             var response = await chatClient.GetResponseAsync<LlmInvoice>(messages, chatOptions, cancellationToken: ct);
             if (response.TryGetResult(out var invoice))
             {
@@ -183,27 +183,37 @@ internal sealed class LlmInvoiceExtractor(
         }
     }
 
-    /// <summary>What the user should double-check, depending on how each part of the invoice was read.</summary>
+    private const string ImageWarning =
+        "La factura se leyó desde una imagen; revise con atención las cantidades y los precios.";
+
     private static List<string> ReadingWarnings(
         InvoiceDocument document, List<InvoicePage> pages, List<ExtractedInvoiceLine> lines)
     {
+        if (document.IsImage)
+        {
+            return [ImageWarning];
+        }
+
+        // A line could come from a scanned page, so the text cannot be used as a reference.
+        if (HasScannedPages(pages))
+        {
+            return [ScannedPagesWarning(pages)];
+        }
+
+        return NumbersMissingFromText(pages.Cast<TextPage>().ToList(), lines);
+    }
+
+    private static bool HasScannedPages(List<InvoicePage> pages) => pages.OfType<ScannedPage>().Any();
+
+    private static string ScannedPagesWarning(List<InvoicePage> pages)
+    {
+        var scannedPageNumbers = pages.OfType<ScannedPage>().Select(page => page.Number);
+        return $"Páginas sin texto legible, leídas como imagen: {string.Join(", ", scannedPageNumbers)}. Revise con atención sus cantidades y precios.";
+    }
+
+    private static List<string> NumbersMissingFromText(List<TextPage> pages, List<ExtractedInvoiceLine> lines)
+    {
         var warnings = new List<string>();
-
-        if (document.Type != InvoiceFileType.Pdf)
-        {
-            warnings.Add("La factura se leyó desde una imagen; revise con atención las cantidades y los precios.");
-            return warnings;
-        }
-
-        var scannedPages = pages.Where(page => page.Text is null).Select(page => page.Number).ToList();
-        if (scannedPages.Count > 0)
-        {
-            warnings.Add($"Páginas sin texto legible, leídas como imagen: {string.Join(", ", scannedPages)}. Revise con atención sus cantidades y precios.");
-            // A line could come from a scanned page, so the text cannot be used as a reference.
-            return warnings;
-        }
-
-        // Every page had text: each number of each line must be printed somewhere in it.
         var allText = string.Join('\n', pages.Select(page => page.Text));
         var printed = PrintedNumbers.Find(allText);
         for (var index = 0; index < lines.Count; index++)
@@ -262,7 +272,6 @@ internal sealed class LlmInvoiceExtractor(
         decimal Quantity,
         decimal UnitPrice);
 
-    // HTTP status codes: https://www.rfc-editor.org/rfc/rfc9110#name-status-codes
     private static class StatusCodes
     {
         public const int FirstClientError = 400;
@@ -274,7 +283,6 @@ internal sealed class LlmInvoiceExtractor(
     }
 }
 
-/// <summary>Used when no API key is configured: the app still starts, and only this feature answers 503.</summary>
 internal sealed class UnconfiguredInvoiceExtractor : IInvoiceExtractor
 {
     public Task<Result<ExtractedInvoice>> ExtractAsync(InvoiceDocument document, CancellationToken ct) =>

@@ -3,13 +3,8 @@ using System.Text.RegularExpressions;
 
 namespace BgInventario.Infrastructure.Invoices;
 
-/// <summary>
-/// The numbers printed in a text. When a PDF has a text layer, every quantity and price the LLM
-/// returns must be one of them; a number that is not there was misread or made up.
-/// </summary>
 internal static partial class PrintedNumbers
 {
-    // A digit, optionally followed by digits and separators and ending in a digit: 7, 4.50, 1.234,56.
     [GeneratedRegex(@"\d(?:[\d.,]*\d)?")]
     private static partial Regex NumberToken();
 

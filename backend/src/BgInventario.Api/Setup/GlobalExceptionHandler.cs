@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Api.Setup;
 
-/// <summary>
-/// logs the exception with its context and returns a ProblemDetails
-/// with a friendly message (never the stack trace). traceId lets support find the log entry.
-/// </summary>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IProblemDetailsService problemDetails)
     : IExceptionHandler
 {
@@ -24,7 +20,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             _ => (StatusCodes.Status500InternalServerError, "Ocurrió un error inesperado. Intente nuevamente más tarde.")
         };
 
-        // Server errors are bugs (Error); client errors are expected noise (Warning).
         if (status >= StatusCodes.Status500InternalServerError)
             logger.LogError(exception, "Unhandled exception on {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
         else

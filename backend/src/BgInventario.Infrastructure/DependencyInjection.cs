@@ -1,5 +1,3 @@
-// Registers persistence (SQL Server + EF Core), security (JWT, password hashing) and the invoice
-// extraction (LLM through an OpenAI-compatible endpoint).
 using System.ClientModel;
 using BgInventario.Core.Common;
 using BgInventario.Core.Features.Auth;
@@ -38,7 +36,6 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Connection string 'Default' is not configured, check appsettings.");
 
         services.AddDbContext<AppDbContext>((sp, options) => options
-            // Retries transient errors (network blips, Azure SQL failovers).
             .UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure())
             .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
             .UseAsyncSeeding((ctx, _, ct) => Seed(ctx, sp, ct))
@@ -51,10 +48,6 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>
-    /// Without an API key the app still starts (local runs, tests) and only the invoice analysis
-    /// answers 503; the rest of the inventory does not depend on the model.
-    /// </summary>
     private static void AddInvoiceExtraction(this IServiceCollection services, IConfiguration configuration)
     {
         var options = configuration.GetSection(InvoiceExtractionOptions.SectionName).Get<InvoiceExtractionOptions>()
@@ -66,7 +59,6 @@ public static class DependencyInjection
             return;
         }
 
-        // OpenRouter (and any OpenAI-compatible provider) only needs the base URL and the key.
         var clientOptions = new OpenAIClientOptions
         {
             Endpoint = new Uri(options.Endpoint),
@@ -75,7 +67,6 @@ public static class DependencyInjection
         var chatClient = new ChatClient(options.Model, new ApiKeyCredential(options.ApiKey!), clientOptions)
             .AsIChatClient()
             .AsBuilder()
-            // Each call appears as a span (model, tokens, duration) in the same traces as the request.
             .UseOpenTelemetry(sourceName: InvoiceExtractionTelemetry.SourceName)
             .Build();
 

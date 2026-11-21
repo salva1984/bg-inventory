@@ -3,10 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BgInventario.Core.Features.Invoices;
 
-/// <summary>
-/// History of confirmed invoices: what was registered, when, by whom, and the original file.
-/// Read only; the records are written by <see cref="InvoiceService.ConfirmAsync"/> with the stock.
-/// </summary>
 public sealed class InvoiceReceiptService(IAppDbContext db)
 {
     /// <summary>Newest first. The projection never reads the file content, only its name.</summary>

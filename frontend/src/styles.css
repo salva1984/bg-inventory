@@ -2,34 +2,62 @@
 
 /*
  * Estilos globales del inventario: tokens, reinicio, y las piezas que usan varias pantallas
- * (etiquetas, tablas, filtros, mensajes y diálogos). Lo propio de cada componente
+ * (módulos, etiquetas, tablas, filtros, mensajes y diálogos). Lo propio de cada componente
  * vive en su archivo .css.
  *
- * Lenguaje visual: el de una bodega ordenada. Lienzo gris frío, superficies blancas,
- * un solo color de acción (petróleo) y ámbar solo para alertas de existencias.
- * Inter, una sans-serif ancha y de altura baja, mantiene legibles las cifras y códigos.
+ * Lenguaje visual: herramienta empresarial (a la altura de SAP Fiori u Odoo) con la densidad
+ * de la web japonesa. Cada área de trabajo es un módulo blanco con filete, esquinas suaves,
+ * una sombra leve y barra de título; el fondo es gris frío y el texto, tinta casi negra.
+ * El azul corporativo se reserva para acción, selección y enlaces; rojo, ámbar y verde solo
+ * para estados, siempre con texto. Inter con pesos contenidos (400 texto, 500 nombres,
+ * 600 títulos, etiquetas y cifras clave): la jerarquía sale del tamaño, no de gritar.
  */
 
 /* ---------- Tokens ---------- */
 :root {
-  --canvas: #f1f4f4;
+  /* Superficies */
+  --canvas: #eef1f4;
   --background: #ffffff;
-  --foreground: #18232b;
-  --muted: #eef2f2;
-  --muted-foreground: #55636d;
-  --border: #dbe1e3;
-  --border-strong: #b9c3c7;
-  --primary: #0d6466;
-  --primary-hover: #0a5052;
+  --muted: #f2f4f7;
+  --row-alt: #f8f9fb;
+  --module-header: #f6f8fa;
+
+  /* Texto: secundario oscuro para que el dato de apoyo se lea sin esfuerzo. */
+  --foreground: #101828;
+  --muted-foreground: #344054;
+  --subtle-foreground: #667085;
+
+  /* Bordes: el filete separa los módulos del fondo; el fuerte marca el contorno de los campos. */
+  --border: #dbe0e6;
+  --border-strong: #b4bdc9;
+  /* Regla superior de los módulos: azul apagado, marca el bloque sin competir con las acciones. */
+  --module-rule: #9fb3d1;
+
+  /* Acción y selección */
+  --primary: #0b5cd5;
+  --primary-hover: #0847a8;
   --primary-foreground: #ffffff;
-  --accent: #e1efee;
-  --accent-foreground: #0a4f51;
-  --destructive: #b4322a;
-  --destructive-soft: #fbe9e7;
-  --warning-soft: #fdf0d5;
-  --warning: #7a4a00;
+  --accent: #e8f0fc;
+  --accent-foreground: #0847a8;
+
+  /* Estados */
+  --destructive: #b42318;
+  --destructive-soft: #fef3f2;
+  --warning: #8a4b00;
+  --warning-soft: #fff4dc;
+  --success: #0b6b3a;
+  --success-soft: #e7f6ec;
+  /* Bordes de los mensajes: del color del estado, pero suaves, para no enmarcar con fuerza. */
+  --destructive-border: #f3c5c0;
+  --warning-border: #ecd29a;
+  --success-border: #b3dcc2;
+
+  /* Formas: 8px en módulos y diálogos, 6px en campos y botones, 4px en etiquetas pequeñas. */
   --radius: 8px;
-  --radius-sm: 4px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  /* Sombra de módulo: apenas despega el blanco del lienzo, sin flotar. */
+  --shadow-module: 0 1px 2px rgb(16 24 40 / 5%), 0 1px 3px rgb(16 24 40 / 4%);
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
@@ -53,7 +81,7 @@
   --mat-sys-outline: var(--border-strong);
   --mat-sys-outline-variant: var(--border);
   --mat-sys-error: var(--destructive);
-  --mat-sys-corner-extra-large: 10px;
+  --mat-sys-corner-extra-large: var(--radius);
   --mat-sys-corner-extra-small: var(--radius-sm);
   --mat-sys-body-large-font: var(--font-sans);
   --mat-sys-body-medium-font: var(--font-sans);
@@ -62,27 +90,32 @@
   --mat-button-filled-container-shape: var(--radius-sm);
   --mat-button-outlined-container-shape: var(--radius-sm);
   --mat-button-text-container-shape: var(--radius-sm);
-  --mat-dialog-container-shape: 10px;
+  --mat-button-filled-label-text-weight: 600;
+  --mat-button-outlined-label-text-weight: 600;
+  --mat-button-text-label-text-weight: 600;
+  --mat-button-outlined-outline-color: var(--border-strong);
+  --mat-dialog-container-shape: var(--radius);
   --mat-form-field-container-text-font: var(--font-sans);
   /* El tooltip usa la fuente small del sistema, que sin definir cae a una serif. */
   --mat-sys-body-small-font: var(--font-sans);
   --mat-tooltip-supporting-text-font: var(--font-sans);
 
   /* Densidad: Material es amplio por defecto; aquí se bajan alturas y tamaños de texto. */
-  --mat-form-field-container-height: 40px;
-  --mat-form-field-container-vertical-padding: 8px;
-  --mat-form-field-container-text-size: 15px;
-  --mat-form-field-outlined-label-text-size: 15px;
-  --mat-select-trigger-text-size: 15px;
+  --mat-form-field-container-height: 36px;
+  --mat-form-field-container-vertical-padding: 6px;
+  --mat-form-field-container-text-size: 14px;
+  --mat-form-field-outlined-label-text-size: 14px;
+  --mat-form-field-outlined-outline-color: var(--border-strong);
+  --mat-select-trigger-text-size: 14px;
   --mat-option-label-text-font: var(--font-sans);
-  --mat-option-label-text-size: 15px;
+  --mat-option-label-text-size: 14px;
   /* Filled y outlined miden lo mismo que un campo de formulario para alinearse a su lado. */
-  --mat-button-filled-container-height: 40px;
-  --mat-button-outlined-container-height: 40px;
-  --mat-button-text-container-height: 36px;
-  --mat-button-filled-label-text-size: 15px;
-  --mat-button-outlined-label-text-size: 15px;
-  --mat-button-text-label-text-size: 15px;
+  --mat-button-filled-container-height: 36px;
+  --mat-button-outlined-container-height: 36px;
+  --mat-button-text-container-height: 32px;
+  --mat-button-filled-label-text-size: 14px;
+  --mat-button-outlined-label-text-size: 14px;
+  --mat-button-text-label-text-size: 14px;
 }
 
 * {
@@ -91,73 +124,83 @@
 body {
   margin: 0;
   background: var(--canvas);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, p {
   margin: 0;
 }
-/* Títulos con la misma fuente del resto de la interfaz, solo con más peso. */
+/* Títulos con la misma fuente del resto de la interfaz; el tamaño y el peso 600 los separan del texto. */
 h1, h2 {
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.2;
+  text-wrap: balance;
 }
 h1 {
-  font-size: 30px;
+  font-size: 24px;
+  letter-spacing: -0.01em;
 }
 h2 {
-  font-size: 24px;
+  font-size: 18px;
 }
 h3 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
 }
 button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
 
 /* ---------- Etiquetas de estado ---------- */
-/* Rectángulos pequeños, como una etiqueta pegada al estante, no píldoras. */
+/* Etiquetas de fondo suave sin contorno: informan el estado sin parecer un sello. */
 .badge {
   display: inline-block;
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
+  padding: 0 7px;
+  border-radius: var(--radius-xs);
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
+  line-height: 20px;
   white-space: nowrap;
 }
 .badge-primary {
   background: var(--accent);
   color: var(--accent-foreground);
 }
+/* "Sin stock" y avisos: el texto dice el estado y el rojo lo refuerza. */
 .badge-warn {
-  background: var(--warning-soft);
-  color: var(--warning);
+  background: var(--destructive-soft);
+  color: var(--destructive);
 }
 
 /* ---------- Encabezado de página y filtros (compartidos por las listas) ---------- */
 .page-heading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
+  /* Altura del botón: el encabezado mide lo mismo con o sin botón y el título no salta al cambiar de pantalla. */
+  min-height: 40px;
+  margin-bottom: 16px;
 }
 .filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 .filters mat-form-field {
   width: 190px;
 }
-/* Los filtros no muestran avisos: sin la reserva de espacio inferior, el campo mide solo 40px. */
+/* Los filtros no muestran avisos: sin la reserva de espacio inferior, el campo mide solo 36px. */
 .filters .mat-mdc-form-field-subscript-wrapper {
   display: none;
 }
@@ -168,15 +211,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   margin-right: auto;
 }
 .filters .search mat-form-field {
-  width: 260px;
+  width: 280px;
+}
+/* Los campos de fondo blanco destacan sobre el gris del lienzo. */
+.filters .mdc-text-field--outlined {
+  background: var(--background);
 }
 /*
  * La barra de carga ocupa siempre su espacio. Mientras se recarga, la tabla anterior sigue
  * visible debajo, así que ordenar o paginar no hace parpadear la página.
  */
 .loading-slot {
-  height: 4px;
-  margin-bottom: 8px;
+  height: 3px;
+  margin-bottom: 6px;
 }
 
 /* La barra permanece montada para animar también su desaparición. */
@@ -193,12 +240,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 }
 
 /* ---------- Tablas ---------- */
+/*
+ * Módulo: caja blanca con filete, sombra leve y una regla azul apagada arriba que la identifica
+ * como área de trabajo. Las tablas, los paneles del resumen y los pasos de la factura comparten
+ * este borde.
+ * position: relative contiene los textos .sr-only de los encabezados; sin él se posicionan
+ * contra la página y la ensanchan en pantallas pequeñas.
+ */
 .table-wrap {
+  position: relative;
   width: 100%;
   overflow-x: auto;
   background: var(--background);
   border: 1px solid var(--border);
+  border-top: 2px solid var(--module-rule);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-module);
 }
 table {
   width: 100%;
@@ -209,30 +266,31 @@ table {
   text-align: left;
 }
 th, td {
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
+/* Encabezados en gris oscuro sobre gris claro: se leen como estructura sin competir con los datos. */
 th {
-  background: var(--muted);
+  background: var(--module-header);
   color: var(--muted-foreground);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 /* Filas alternas: facilitan seguir una fila en tablas anchas. El hover va después para prevalecer. */
 tbody tr:nth-child(even) {
-  background: #f7f9f9;
+  background: var(--row-alt);
 }
 tbody tr:hover {
-  background: var(--muted);
+  background: var(--accent);
 }
 tr:last-child td {
   border-bottom: 0;
 }
 td strong {
-  font-weight: 600;
+  font-weight: 500;
 }
 /* Anchos de columna reutilizables para <col>; la columna sin clase absorbe el espacio restante. */
 .col-count { width: 120px; }
@@ -265,27 +323,39 @@ td strong {
 }
 .detail {
   display: block;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: 12px;
   white-space: nowrap;
 }
-/* Códigos de producto: cifras de ancho fijo y algo de aire, como en una etiqueta impresa. */
+/* Códigos de producto: cifras de ancho fijo, como en una etiqueta impresa. */
 .code {
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
 }
 .actions {
   white-space: nowrap;
   text-align: right;
 }
+/*
+ * Acciones destructivas (Eliminar, Quitar): en gris mientras están en reposo, para que el rojo
+ * de cada fila no compita con los estados; se vuelven rojas al apuntarlas o enfocarlas.
+ * !important porque el botón de Material fija su propio color de texto.
+ */
 .danger {
+  color: var(--muted-foreground) !important;
+}
+.danger:hover:not(:disabled),
+.danger:focus-visible {
   color: var(--destructive) !important;
 }
 .table-help {
   max-width: 72ch;
-  margin-bottom: 12px;
   color: var(--muted-foreground);
+}
+/* Descripción de pantalla: va debajo del encabezado para no alterar su altura. */
+.page-heading + .table-help {
+  margin: -8px 0 16px;
 }
 .empty {
   padding: 40px 16px;
@@ -297,18 +367,22 @@ td strong {
 }
 
 /* ---------- Mensajes ---------- */
+/* Borde suave del color del estado: el mensaje se distingue del contenido aunque el fondo sea claro. */
 .message {
-  padding: 10px 14px;
-  margin-bottom: 16px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid;
   border-radius: var(--radius-sm);
 }
 .error {
+  border-color: var(--destructive-border);
   background: var(--destructive-soft);
   color: var(--destructive);
 }
 .success {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 /* Aviso junto al botón de guardar deshabilitado: explica qué falta. */
@@ -320,17 +394,18 @@ td strong {
 
 /* ---------- Diálogo de edición ---------- */
 .dialog {
-  padding: 24px;
+  padding: 20px 24px;
   max-height: 90vh;
   overflow: auto;
   background: var(--background);
+  border-top: 2px solid var(--module-rule);
 }
 .dialog-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .form-grid {
   display: grid;
@@ -352,7 +427,7 @@ td strong {
   align-items: center;
   gap: 8px;
   margin-top: 16px;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 /* Texto solo para lectores de pantalla. */
@@ -371,7 +446,7 @@ td strong {
 /* ---------- Pantallas pequeñas ---------- */
 @media (max-width: 700px) {
   h1 {
-    font-size: 28px;
+    font-size: 22px;
   }
   .page-heading {
     align-items: flex-start;
@@ -395,7 +470,7 @@ td strong {
     grid-column: auto;
   }
   .dialog {
-    padding: 18px;
+    padding: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

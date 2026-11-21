@@ -1,5 +1,5 @@
 /*
- * La celda del proveedor más barato de cada producto se tiñe de petróleo y lleva
+ * La celda del proveedor más barato de cada producto se tiñe de azul y lleva
  * el texto "Más barato", para que la marca no dependa solo del color.
  */
 td.lowest {
@@ -13,10 +13,16 @@ td.lowest .detail {
   font-weight: 400;
 }
 
+/* Etiqueta blanca sobre el tinte azul, como las de estado: se reconoce aunque la fila esté en hover. */
 .lowest-label {
-  margin-right: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: var(--radius-xs);
+  background: var(--background);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  vertical-align: 1px;
 }
 
 /*
@@ -27,7 +33,7 @@ td.lowest .detail {
  * anchos los fija el <colgroup>.
  */
 tbody tr {
-  height: 64px;
+  height: 56px;
 }
 
 /*
@@ -55,7 +61,7 @@ th.actions,
 td.actions {
   position: sticky;
   right: 0;
-  padding: 12px 8px;
+  padding: 4px;
   text-align: center;
   border-left: 1px solid var(--border);
 }
@@ -65,11 +71,11 @@ td.actions {
 }
 
 tbody tr:nth-child(even) td.actions {
-  background: #f7f9f9;
+  background: var(--row-alt);
 }
 
 tbody tr:hover td.actions {
-  background: var(--muted);
+  background: var(--accent);
 }
 
 /*
@@ -87,7 +93,7 @@ tbody tr:hover td.actions {
     bottom: 0;
     left: -12px;
     width: 12px;
-    background: linear-gradient(to left, rgb(24 35 43 / 14%), transparent);
+    background: linear-gradient(to left, rgb(16 24 40 / 16%), transparent);
     opacity: 0;
     pointer-events: none;
     animation: fade-out-at-scroll-end linear both;
