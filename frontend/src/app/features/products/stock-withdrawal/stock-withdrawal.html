@@ -1,0 +1,57 @@
+<section class="dialog">
+  <div class="dialog-heading">
+    <h2 id="dialog-title">Sacar inventario</h2>
+    <button mat-button aria-label="Cerrar" (click)="close()">Cerrar</button>
+  </div>
+  @if (error()) { <div class="message error" role="alert">{{ error() }}</div> }
+
+  @if (product(); as product) {
+    <p><strong>{{ product.name }}</strong> <span class="detail code">{{ product.code }}</span></p>
+
+    @if (lotsWithStock().length === 0) {
+      <p class="empty">Este producto no tiene existencias para sacar.</p>
+    } @else {
+      <form #withdrawalForm="ngForm" (ngSubmit)="withdraw()">
+        <div class="form-grid">
+          <mat-form-field>
+            <mat-label>Lote</mat-label>
+            <mat-select name="lot" [(ngModel)]="lotId" [disabled]="busy()" required>
+              @for (lot of lotsWithStock(); track lot.id) {
+                <mat-option [value]="lot.id">{{ describeLot(lot) }}</mat-option>
+              }
+            </mat-select>
+            <mat-error>Elige un lote.</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Cantidad</mat-label>
+            <input
+                matInput
+                #quantityField="ngModel"
+                name="quantity"
+                [(ngModel)]="quantity"
+                type="number"
+                min="1"
+                [max]="maxQuantity()"
+                step="1"
+                [pattern]="wholeNumberPattern"
+                [disabled]="busy()"
+                required>
+            @if (selectedLot()) { <mat-hint>Máximo {{ maxQuantity() }}</mat-hint> }
+            <mat-error>
+              @if (quantityField.hasError('max')) { Solo hay {{ maxQuantity() }} en este lote. }
+              @else { Ingresa un número entero, 1 o mayor. }
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="dialog-actions">
+          <button mat-button type="button" (click)="close()">Cancelar</button>
+          <button
+              mat-flat-button
+              type="submit"
+              [disabled]="busy() || withdrawalForm.invalid">Sacar</button>
+        </div>
+      </form>
+    }
+  }
+</section>

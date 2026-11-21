@@ -44,6 +44,12 @@ export class ProductService {
     return this.http.delete(`${this.url}/${id}`);
   }
 
+  // Salida rápida: resta unidades de un lote y devuelve el producto con el stock nuevo.
+  withdrawStock(productId: number, lotId: number, quantity: number) {
+    const url = `${this.url}/${productId}/lots/${lotId}/withdraw`;
+    return this.http.post<ProductDetail>(url, { quantity });
+  }
+
   getPriceMatrix(filters: PriceMatrixFilters) {
     let params = new HttpParams()
       .set('page', filters.page)

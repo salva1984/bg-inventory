@@ -12,6 +12,8 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
     public static readonly ErrorDetail DuplicateLot = ErrorDetail.Validation("product.duplicate_lot", "Hay registros de inventario repetidos con el mismo proveedor y número de lote.");
     public static readonly ErrorDetail UnknownSupplier = ErrorDetail.Validation("product.unknown_supplier", "Uno o más proveedores no existen.");
     public static readonly ErrorDetail UnknownLot = ErrorDetail.Validation("product.unknown_lot", "Uno o más registros de inventario no pertenecen a este producto.");
+    public static readonly ErrorDetail LotNotFound = ErrorDetail.NotFound("product.lot_not_found", "El lote no existe o no pertenece a este producto.");
+    public static readonly ErrorDetail InsufficientStock = ErrorDetail.Conflict("product.insufficient_stock", "El lote no tiene existencias suficientes para esa salida.");
 
     public Task<PagedResult<ProductListItem>> GetPagedAsync(ProductQuery query, CancellationToken ct)
     {
@@ -164,6 +166,60 @@ public sealed class ProductService(IAppDbContext db, TimeProvider clock, Dashboa
 
         await dashboardCache.InvalidateAsync(ct);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Quick stock exit: subtracts units from one lot of the product. Returns the updated product
+    /// so the client can show the new stock without another request.
+    /// </summary>
+    public async Task<Result<ProductDetail>> WithdrawStockAsync(
+        int productId, int lotId, WithdrawStockRequest request, CancellationToken ct)
+    {
+        var lotBelongsToProduct = await db.InventoryLots
+            .AnyAsync(lot => lot.Id == lotId && lot.ProductId == productId, ct);
+        if (!lotBelongsToProduct)
+        {
+            return LotNotFound;
+        }
+
+        var withdrawn = await TrySubtractStockAsync(productId, lotId, request.Quantity, ct);
+        if (!withdrawn)
+        {
+            return InsufficientStock;
+        }
+
+        await dashboardCache.InvalidateAsync(ct);
+        return await GetByIdAsync(productId, ct);
+    }
+
+    /// <summary>
+    /// Subtracts in a single conditional UPDATE: if two people withdraw at the same time, the
+    /// database decides who gets the units and the stock never goes below zero.
+    /// Returns false when the lot does not have enough stock.
+    /// </summary>
+    private async Task<bool> TrySubtractStockAsync(int productId, int lotId, int quantity, CancellationToken ct)
+    {
+        // ExecuteUpdate skips the audit interceptor, so both dates are stamped here.
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        // The soft-delete filter joins Product and Supplier, which SQLite cannot translate inside an
+        // UPDATE. It is safe to skip it: the caller already checked the lot with the filters applied.
+        var updatedLots = await db.InventoryLots
+            .IgnoreQueryFilters()
+            .Where(lot => lot.Id == lotId && lot.Stock >= quantity)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(lot => lot.Stock, lot => lot.Stock - quantity)
+                .SetProperty(lot => lot.UpdatedAt, now), ct);
+        if (updatedLots == 0)
+        {
+            return false;
+        }
+
+        // The product list shows "last updated"; a stock exit counts as a change of the product.
+        await db.Products
+            .Where(p => p.Id == productId)
+            .ExecuteUpdateAsync(set => set.SetProperty(p => p.UpdatedAt, now), ct);
+        return true;
     }
 
     private IQueryable<Product> ApplyProductQuery(ProductQuery query)

@@ -63,6 +63,10 @@ public sealed record SaveInventoryLotRequest(
     [property: Range(InventoryLotLimits.MinPrice, InventoryLotLimits.MaxPrice)] decimal Price,
     [property: Range(0, int.MaxValue)] int Stock);
 
+/// <summary>Takes units out of one lot (a sale, a loss, an internal use); no movement history is kept.</summary>
+public sealed record WithdrawStockRequest(
+    [property: Range(1, int.MaxValue)] int Quantity);
+
 public sealed record PriceMatrix(
     IReadOnlyList<PriceMatrixSupplier> Suppliers,
     PagedResult<PriceMatrixRow> Products);

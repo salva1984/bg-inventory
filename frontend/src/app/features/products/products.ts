@@ -19,6 +19,7 @@ import { SupplierService } from '../../services/supplier.service';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { errorMessage } from '../../shared/utils/error-message';
 import { ProductForm, ProductFormData } from './product-form/product-form';
+import { StockWithdrawal, StockWithdrawalData } from './stock-withdrawal/stock-withdrawal';
 
 /** Listado de productos con búsqueda, filtro por proveedor, orden y paginación en el servidor. */
 @Component({
@@ -127,6 +128,21 @@ export class Products implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(saved => {
       if (!saved) return;
       this.notice.set('Producto guardado.');
+      this.load();
+    });
+  }
+
+  // Salida rápida de inventario: el diálogo descuenta por su cuenta y devuelve el producto actualizado.
+  openWithdrawal(product: Product) {
+    const dialogRef = this.dialog.open<StockWithdrawal, StockWithdrawalData, ProductDetail>(StockWithdrawal, {
+      ...dialogSize,
+      ariaLabelledBy: 'dialog-title',
+      data: { productId: product.id },
+    });
+
+    dialogRef.afterClosed().subscribe(updated => {
+      if (!updated) return;
+      this.notice.set(`Salida registrada para «${updated.name}».`);
       this.load();
     });
   }

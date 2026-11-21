@@ -30,6 +30,10 @@ public static class ProductEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
         write.MapDelete("/{id:int}", Delete).WithSummary("Elimina el producto y su inventario")
             .ProducesProblem(StatusCodes.Status404NotFound);
+        write.MapPost("/{id:int}/lots/{lotId:int}/withdraw", WithdrawStock)
+            .WithSummary("Saca unidades de un lote (salida rápida de inventario)")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static async Task<Ok<PagedResult<ProductListItem>>> GetPaged(
@@ -68,5 +72,12 @@ public static class ProductEndpoints
     {
         var result = await products.DeleteAsync(id, ct);
         return result.IsSuccess ? TypedResults.NoContent() : result.Error!.ToProblem();
+    }
+
+    private static async Task<Results<Ok<ProductDetail>, ProblemHttpResult>> WithdrawStock(
+        int id, int lotId, WithdrawStockRequest request, ProductService products, CancellationToken ct)
+    {
+        var result = await products.WithdrawStockAsync(id, lotId, request, ct);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error!.ToProblem();
     }
 }

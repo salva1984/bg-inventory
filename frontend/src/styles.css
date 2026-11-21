@@ -297,6 +297,7 @@ td strong {
 .col-money { width: 140px; }
 .col-date { width: 130px; }
 .col-actions { width: 200px; }
+.col-actions-wide { width: 280px; }
 .col-product { width: 280px; }
 .col-supplier { width: 200px; }
 /*

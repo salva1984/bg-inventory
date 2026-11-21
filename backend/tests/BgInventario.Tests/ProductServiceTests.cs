@@ -162,5 +162,48 @@ public sealed class ProductServiceTests : IDisposable
         Assert.Equal("TEC-1", Assert.Single(bySupplier.Items).Code);
     }
 
+    [Fact]
+    public async Task Withdraw_subtracts_units_from_the_lot()
+    {
+        var (a, _) = await _db.SeedSuppliersAsync();
+        var created = (await _service.CreateAsync(new SaveProductRequest("P1", "Producto", null,
+            [new(null, a.Id, "L1", 10m, 5)]), default)).Value;
+        var lot = Assert.Single(created.Lots);
+
+        var result = await _service.WithdrawStockAsync(created.Id, lot.Id, new WithdrawStockRequest(3), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, Assert.Single(result.Value.Lots).Stock);
+    }
+
+    [Fact]
+    public async Task Withdraw_more_than_available_returns_conflict_and_keeps_stock()
+    {
+        var (a, _) = await _db.SeedSuppliersAsync();
+        var created = (await _service.CreateAsync(new SaveProductRequest("P1", "Producto", null,
+            [new(null, a.Id, "L1", 10m, 2)]), default)).Value;
+        var lot = Assert.Single(created.Lots);
+
+        var result = await _service.WithdrawStockAsync(created.Id, lot.Id, new WithdrawStockRequest(3), default);
+
+        Assert.Equal(ProductService.InsufficientStock, result.Error);
+        var unchanged = (await _service.GetByIdAsync(created.Id, default)).Value;
+        Assert.Equal(2, Assert.Single(unchanged.Lots).Stock);
+    }
+
+    [Fact]
+    public async Task Withdraw_from_a_lot_of_another_product_returns_not_found()
+    {
+        var (a, _) = await _db.SeedSuppliersAsync();
+        var first = (await _service.CreateAsync(new SaveProductRequest("P1", "Uno", null,
+            [new(null, a.Id, "L1", 10m, 5)]), default)).Value;
+        var second = (await _service.CreateAsync(new SaveProductRequest("P2", "Dos", null, []), default)).Value;
+        var lotOfFirst = Assert.Single(first.Lots);
+
+        var result = await _service.WithdrawStockAsync(second.Id, lotOfFirst.Id, new WithdrawStockRequest(1), default);
+
+        Assert.Equal(ProductService.LotNotFound, result.Error);
+    }
+
     public void Dispose() => _db.Dispose();
 }

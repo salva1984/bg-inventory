@@ -10,6 +10,7 @@ Aplicación web para gestionar el inventario de una empresa con **precios y stoc
 - Matriz de precios por proveedor (`GET /api/products/price-matrix`).
 - Dashboard: valor del inventario, valor por proveedor, menor stock y mayor diferencia de precio.
 - Ingreso de stock desde facturas (PDF o imagen) con extracción por LLM y conciliación de productos.
+- Salida rápida de stock desde el listado de productos: se elige el lote y la cantidad (`POST /api/products/{id}/lots/{lotId}/withdraw`, solo admin, sin historial).
 - Autenticación JWT con dos roles: `admin` (lectura y escritura) y `viewer` (solo lectura).
 - Observabilidad: logs, trazas y métricas en el Aspire Dashboard, incluidos los errores del navegador.
 

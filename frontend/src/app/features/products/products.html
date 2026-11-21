@@ -51,7 +51,8 @@
             <col class="col-money">
             <col class="col-money">
             <col class="col-date">
-            <col class="col-actions">
+            <!-- Los administradores tienen un tercer botón ("Sacar"), por eso la columna es más ancha. -->
+            <col [class]="isAdmin ? 'col-actions-wide' : 'col-actions'">
           </colgroup>
           <thead>
             <tr>
@@ -89,6 +90,10 @@
                       (click)="openForm(item.id)"
                       [disabled]="busy()">{{ isAdmin ? 'Editar' : 'Ver detalle' }}</button>
                   @if (isAdmin) {
+                    <button
+                        mat-button
+                        (click)="openWithdrawal(item)"
+                        [disabled]="busy() || item.totalStock === 0">Sacar</button>
                     <button
                         mat-button
                         class="danger"
