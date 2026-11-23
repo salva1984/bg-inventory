@@ -83,7 +83,7 @@ export interface InvoiceFileUpload {
 export interface ConfirmInvoiceLine {
   productId: number;
   // La descripción tal como vino en la factura: con ella se reconocerá la próxima.
-  description: string;
+  originalDescription: string;
   supplierItemCode: string | null;
   quantity: number;
   unitPrice: number;

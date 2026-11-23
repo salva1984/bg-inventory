@@ -345,7 +345,7 @@ export class Invoices implements OnInit, OnDestroy {
       file: { fileName, content: fileContent },
       lines: this.includedLines.map(line => ({
         productId: line.product!.productId,
-        description: line.description,
+        originalDescription: line.description,
         supplierItemCode: line.supplierItemCode,
         quantity: Number(line.quantity),
         unitPrice: Number(line.unitPrice),
